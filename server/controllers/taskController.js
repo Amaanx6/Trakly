@@ -1,7 +1,6 @@
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import pdfParse from 'pdf-parse';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -106,6 +105,15 @@ export const deleteTask = async (req, res) => {
 };
 
 export const getAnswersFromPDF = async (req, res) => {
+  let pdfParse;
+  try {
+    // Lazy-load pdf-parse to avoid initialization errors
+    pdfParse = (await import('pdf-parse')).default;
+  } catch (err) {
+    console.error('Error loading pdf-parse:', err);
+    return res.status(500).json({ message: 'Failed to load PDF parser', error: err.message });
+  }
+
   try {
     const { taskId } = req.params;
     const userId = req.user.id;
@@ -116,7 +124,14 @@ export const getAnswersFromPDF = async (req, res) => {
     }
 
     const pdfPath = `./${task.pdfUrl}`;
-    const dataBuffer = await pdfParse(pdfPath);
+    let dataBuffer;
+    try {
+      dataBuffer = await pdfParse(pdfPath);
+    } catch (err) {
+      console.error('Error parsing PDF:', err);
+      return res.status(500).json({ message: 'Failed to parse PDF', error: err.message });
+    }
+
     const pdfText = dataBuffer.text;
 
     const prompt = `Extract questions and their answers from the following PDF text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array:\n\n${pdfText}`;
