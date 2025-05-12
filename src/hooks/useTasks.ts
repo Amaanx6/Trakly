@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/constants';
-import { Task, TaskInput, AnswersResponse } from '../types';
+import { Task, TaskInput, QuestionAnswer } from '../types';
 
 interface UseTasksReturn {
   tasks: Task[];
@@ -13,7 +13,7 @@ interface UseTasksReturn {
   deleteTask: (id: string) => Promise<void>;
   markTaskComplete: (id: string) => Promise<Task>;
   upcomingTasks: Task[];
-  getAnswers: (taskId: string) => Promise<AnswersResponse>;
+  getAnswers: (taskId: string) => Promise<QuestionAnswer[]>;
 }
 
 export const useTasks = (): UseTasksReturn => {
@@ -21,7 +21,6 @@ export const useTasks = (): UseTasksReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all tasks
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -31,13 +30,13 @@ export const useTasks = (): UseTasksReturn => {
       });
       setTasks(res.data);
     } catch (err: any) {
+      console.error('Error fetching tasks:', err);
       setError(err.response?.data?.message || 'Failed to fetch tasks');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Add a new task
   const addTask = async (taskData: TaskInput) => {
     try {
       const formData = new FormData();
@@ -53,18 +52,24 @@ export const useTasks = (): UseTasksReturn => {
       }
 
       const res = await axios.post(`${API_URL}/api/tasks`, formData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data',
+        },
       });
       setTasks((prevTasks) => [...prevTasks, res.data]);
       return res.data;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Failed to add task';
+      console.error('Error adding task:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.msg ||
+        'Failed to add task. Please try again.';
       setError(errorMessage);
       throw new Error(errorMessage);
     }
   };
 
-  // Update a task
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
       const res = await axios.put(`${API_URL}/api/tasks/${id}`, updates, {
@@ -75,12 +80,12 @@ export const useTasks = (): UseTasksReturn => {
       );
       return res.data;
     } catch (err: any) {
+      console.error('Error updating task:', err);
       setError(err.response?.data?.message || 'Failed to update task');
       throw err;
     }
   };
 
-  // Delete a task
   const deleteTask = async (id: string) => {
     try {
       await axios.delete(`${API_URL}/api/tasks/${id}`, {
@@ -88,12 +93,12 @@ export const useTasks = (): UseTasksReturn => {
       });
       setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
     } catch (err: any) {
+      console.error('Error deleting task:', err);
       setError(err.response?.data?.message || 'Failed to delete task');
       throw err;
     }
   };
 
-  // Mark task as complete
   const markTaskComplete = async (id: string) => {
     try {
       const res = await axios.put(
@@ -106,31 +111,30 @@ export const useTasks = (): UseTasksReturn => {
       );
       return res.data;
     } catch (err: any) {
+      console.error('Error marking task complete:', err);
       setError(err.response?.data?.message || 'Failed to update task status');
       throw err;
     }
   };
 
-  // Get answers from PDF
   const getAnswers = async (taskId: string) => {
     try {
       const res = await axios.get(`${API_URL}/api/tasks/${taskId}/answers`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      return res.data;
+      return res.data.questions;
     } catch (err: any) {
+      console.error('Error fetching answers:', err);
       setError(err.response?.data?.message || 'Failed to fetch answers');
       throw err;
     }
   };
 
-  // Get upcoming tasks
   const upcomingTasks = tasks
     .filter((task) => task.status === 'pending')
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 5);
 
-  // Fetch tasks on component mount
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -149,4 +153,4 @@ export const useTasks = (): UseTasksReturn => {
   };
 };
 
-export type { TaskInput, Task };
+export { TaskInput, Task };
