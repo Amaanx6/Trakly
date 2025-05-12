@@ -17,7 +17,7 @@ const LoginPage: React.FC = () => {
         <div className="container-xl">
           <Link to="/" className="flex items-center gap-2">
             <BookOpen className="h-6 w-6 text-primary-500" />
-            <span className="font-bold text-xl">AssignTrack</span>
+            <span className="font-bold text-xl">Trakly</span>
           </Link>
         </div>
       </div>
