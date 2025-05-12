@@ -60,7 +60,8 @@ export const useTasks = (): UseTasksReturn => {
       }
 
       // Log FormData entries
-      console.log('Sending task data:', Object.fromEntries(formData));
+      const formDataEntries = Object.fromEntries(formData);
+      console.log('useTasks addTask submitting FormData:', formDataEntries);
 
       const res = await axios.post(`${API_URL}/api/tasks`, formData, {
         headers: {
@@ -71,12 +72,13 @@ export const useTasks = (): UseTasksReturn => {
       setTasks((prevTasks) => [...prevTasks, res.data]);
       return res.data;
     } catch (err: any) {
-      console.error('Error adding task:', err);
+      console.error('useTasks addTask error:', err);
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.msg ||
         err.message ||
-        'Failed to add task. Please try again.';
+        'Failed to add task';
+      console.error('useTasks error details:', err.response?.data);
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -165,6 +167,6 @@ export const useTasks = (): UseTasksReturn => {
   };
 };
 
-export type { Task };
-  export type { TaskInput };
+export type { TaskInput };
+  export type { Task };
 

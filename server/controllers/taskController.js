@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import pdfParse from 'pdf-parse';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -17,6 +18,10 @@ export const getTasks = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
+    // Log raw request data before validation
+    console.log('Raw request body:', req.body);
+    console.log('Received file:', req.file);
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -27,6 +32,9 @@ export const createTask = async (req, res) => {
     const { title, description, deadline, priority, status } = req.body;
     const userId = req.user?.id;
 
+    // Log parsed body after validation
+    console.log('Parsed request body:', { title, description, deadline, priority, status });
+
     // Verify user authentication
     if (!userId) {
       console.error('User ID missing in request');
@@ -34,16 +42,16 @@ export const createTask = async (req, res) => {
     }
 
     // Ensure required fields
-    if (!title || !deadline) {
+    if (!title?.trim() || !deadline) {
       console.error('Missing required fields:', { title, deadline });
-      return res.status(400).json({ message: 'Title and deadline are required' });
+      return res.status(400).json({ message: 'Title is required' });
     }
 
     const pdfUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const task = await Task.create({
-      title,
-      description,
+      title: title.trim(),
+      description: description?.trim() || '',
       deadline,
       priority: priority || 'medium',
       status: status || 'pending',
@@ -62,22 +70,16 @@ export const createTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, deadline, status, priority } = req.body;
+    const userId = req.user.id;
 
-    let task = await Task.findById(id);
+    const task = await Task.findOne({ _id: id, user: userId });
     if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: 'Task not found or not authorized' });
     }
 
-    if (task.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to update this task' });
-    }
-
-    task = await Task.findByIdAndUpdate(
-      id,
-      { title, description, deadline, status, priority },
-      { new: true, runValidators: true }
-    );
+    const updates = req.body;
+    Object.assign(task, updates);
+    await task.save();
 
     res.status(200).json(task);
   } catch (err) {
@@ -89,17 +91,13 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const task = await Task.findById(id);
+    const userId = req.user.id;
 
+    const task = await Task.findOneAndDelete({ _id: id, user: userId });
     if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: 'Task not found or not authorized' });
     }
 
-    if (task.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to delete this task' });
-    }
-
-    await Task.findByIdAndDelete(id);
     res.status(200).json({ message: 'Task deleted successfully' });
   } catch (err) {
     console.error('Error deleting task:', err);
@@ -110,27 +108,36 @@ export const deleteTask = async (req, res) => {
 export const getAnswersFromPDF = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const task = await Task.findById(taskId);
+    const userId = req.user.id;
 
+    const task = await Task.findOne({ _id: taskId, user: userId });
     if (!task || !task.pdfUrl) {
       return res.status(404).json({ message: 'Task or PDF not found' });
     }
 
-    const file = await genAI.fileManager.uploadFile(task.pdfUrl, {
-      mimeType: 'application/pdf',
-      displayName: `Task-${taskId}.pdf`,
-    });
+    const pdfPath = `./${task.pdfUrl}`;
+    const dataBuffer = await pdfParse(pdfPath);
+    const pdfText = dataBuffer.text;
 
-    const prompt = 'Extract key questions and their answers from the uploaded PDF. Return in JSON format with keys "questions" (array of objects with "question" and "answer").';
-    const result = await model.generateContent([
-      { fileData: { fileUri: file.uri, mimeType: file.mimeType } },
-      { text: prompt },
-    ]);
-    const answers = JSON.parse(result.response.text());
+    const prompt = `Extract questions and their answers from the following PDF text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array:\n\n${pdfText}`;
 
-    res.status(200).json(answers);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let questions;
+
+    try {
+      questions = JSON.parse(response.text());
+      if (!Array.isArray(questions)) {
+        throw new Error('Response is not an array');
+      }
+    } catch (err) {
+      console.error('Error parsing AI response:', err);
+      questions = [];
+    }
+
+    res.status(200).json({ questions });
   } catch (err) {
     console.error('Error processing PDF:', err);
-    res.status(500).json({ message: 'Error processing PDF', error: err.message });
+    res.status(500).json({ message: 'Server error while processing PDF', error: err.message });
   }
 };

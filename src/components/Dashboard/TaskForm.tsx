@@ -63,7 +63,7 @@ const TaskForm = () => {
 
     // Log FormData for debugging
     const formDataEntries = Object.fromEntries(data);
-    console.log('Submitting FormData:', formDataEntries);
+    console.log('TaskForm submitting FormData:', formDataEntries);
 
     try {
       const response = await fetch(`${API_URL}/api/tasks`, {
@@ -76,7 +76,7 @@ const TaskForm = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Backend error response:', errorData);
+        console.error('TaskForm backend error:', errorData);
         throw new Error(errorData.message || 'Failed to create task');
       }
 
@@ -91,7 +91,7 @@ const TaskForm = () => {
       setPdf(null);
       (document.getElementById('pdf-input') as HTMLInputElement).value = '';
     } catch (err) {
-      console.error('Task creation failed:', err);
+      console.error('TaskForm submission failed:', err);
       setError((err as Error).message);
     }
   };
