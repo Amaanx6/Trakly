@@ -153,4 +153,4 @@ export const useTasks = (): UseTasksReturn => {
   };
 };
 
-export { TaskInput, Task };
+export type { TaskInput, Task };
