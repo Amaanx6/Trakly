@@ -20,4 +20,13 @@ export const taskValidator = [
     .optional()
     .isIn(['low', 'medium', 'high'])
     .withMessage('Priority must be low, medium, or high'),
+  body('status')
+    .optional()
+    .isIn(['pending', 'completed'])
+    .withMessage('Status must be pending or completed'),
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Description cannot be more than 500 characters'),
 ];

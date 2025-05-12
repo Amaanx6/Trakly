@@ -1,32 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/constants';
-
-export interface QuestionAnswer {
-  question: string;
-  answer: string;
-}
-
-export interface Task {
-  _id: string;
-  title: string;
-  description: string;
-  deadline: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'completed';
-  user: string;
-  createdAt: string;
-  updatedAt: string;
-  pdfUrl?: string;
-}
-
-export interface TaskInput {
-  title: string;
-  description: string;
-  deadline: string;
-  priority: 'low' | 'medium' | 'high';
-  pdf?: File;
-}
+import { Task, TaskInput, AnswersResponse } from '../types';
 
 interface UseTasksReturn {
   tasks: Task[];
@@ -38,6 +13,7 @@ interface UseTasksReturn {
   deleteTask: (id: string) => Promise<void>;
   markTaskComplete: (id: string) => Promise<Task>;
   upcomingTasks: Task[];
+  getAnswers: (taskId: string) => Promise<AnswersResponse>;
 }
 
 export const useTasks = (): UseTasksReturn => {
@@ -45,22 +21,14 @@ export const useTasks = (): UseTasksReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Add authorization header to axios requests
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  };
-
   // Fetch all tasks
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_URL}/api/tasks`, getAuthConfig());
+      const res = await axios.get(`${API_URL}/api/tasks`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setTasks(res.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch tasks');
@@ -77,29 +45,31 @@ export const useTasks = (): UseTasksReturn => {
       formData.append('description', taskData.description);
       formData.append('deadline', taskData.deadline);
       formData.append('priority', taskData.priority);
+      if (taskData.status) {
+        formData.append('status', taskData.status);
+      }
       if (taskData.pdf) {
         formData.append('pdf', taskData.pdf);
       }
 
       const res = await axios.post(`${API_URL}/api/tasks`, formData, {
-        ...getAuthConfig(),
-        headers: {
-          ...getAuthConfig().headers,
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setTasks((prevTasks) => [...prevTasks, res.data]);
       return res.data;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add task');
-      throw err;
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Failed to add task';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
   // Update a task
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
-      const res = await axios.put(`${API_URL}/api/tasks/${id}`, updates, getAuthConfig());
+      const res = await axios.put(`${API_URL}/api/tasks/${id}`, updates, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task._id === id ? res.data : task))
       );
@@ -113,7 +83,9 @@ export const useTasks = (): UseTasksReturn => {
   // Delete a task
   const deleteTask = async (id: string) => {
     try {
-      await axios.delete(`${API_URL}/api/tasks/${id}`, getAuthConfig());
+      await axios.delete(`${API_URL}/api/tasks/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete task');
@@ -124,9 +96,11 @@ export const useTasks = (): UseTasksReturn => {
   // Mark task as complete
   const markTaskComplete = async (id: string) => {
     try {
-      const res = await axios.put(`${API_URL}/api/tasks/${id}`, {
-        status: 'completed',
-      }, getAuthConfig());
+      const res = await axios.put(
+        `${API_URL}/api/tasks/${id}`,
+        { status: 'completed' },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task._id === id ? res.data : task))
       );
@@ -137,11 +111,24 @@ export const useTasks = (): UseTasksReturn => {
     }
   };
 
-  // Get upcoming tasks (pending tasks ordered by deadline)
+  // Get answers from PDF
+  const getAnswers = async (taskId: string) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/tasks/${taskId}/answers`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return res.data;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to fetch answers');
+      throw err;
+    }
+  };
+
+  // Get upcoming tasks
   const upcomingTasks = tasks
     .filter((task) => task.status === 'pending')
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 5); // Get only 5 nearest deadline tasks
+    .slice(0, 5);
 
   // Fetch tasks on component mount
   useEffect(() => {
@@ -158,5 +145,8 @@ export const useTasks = (): UseTasksReturn => {
     deleteTask,
     markTaskComplete,
     upcomingTasks,
+    getAnswers,
   };
 };
+
+export type { TaskInput, Task };

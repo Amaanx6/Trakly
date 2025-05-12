@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, CheckSquare, Filter, RefreshCw } from 'lucide-react';
 import { API_URL } from '../../config/constants';
-import { Task, QuestionAnswer } from '../../hooks/useTasks';
+import { Task, QuestionAnswer } from '../../types';
 import TaskItem from './TaskItem';
 import GlassContainer from '../Common/GlassContainer';
 import Loader from '../Common/Loader';
@@ -30,43 +30,44 @@ const TaskList: React.FC<TaskListProps> = ({
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortType>('deadline');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [answers, setAnswers] = useState<Record<string, QuestionAnswer[]>>({});
-  const [answerLoading, setAnswerLoading] = useState<Record<string, boolean>>({});
-  const [answerError, setAnswerError] = useState<string>('');
+  const [answersCache, setAnswersCache] = useState<Record<string, QuestionAnswer[]>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filter tasks based on status
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'all') return true;
-    return task.status === filter;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filter === 'all') return true;
+      return task.status === filter;
+    });
+  }, [tasks, filter]);
 
-  // Sort tasks based on selected criteria
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    let comparison = 0;
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      let comparison = 0;
 
-    switch (sort) {
-      case 'deadline':
-        comparison = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        break;
-      case 'priority':
-        const priorityOrder = { high: 1, medium: 2, low: 3 };
-        comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
-        break;
-      case 'title':
-        comparison = a.title.localeCompare(b.title);
-        break;
-      case 'createdAt':
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        break;
-    }
+      switch (sort) {
+        case 'deadline':
+          comparison = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+          break;
+        case 'priority':
+          const priorityOrder = { high: 1, medium: 2, low: 3 };
+          comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
 
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredTasks, sort, sortDirection]);
 
-  // Fetch answers for a specific task
   const handleGetAnswers = async (taskId: string) => {
-    setAnswerLoading(prev => ({ ...prev, [taskId]: true }));
-    setAnswerError('');
+    if (answersCache[taskId]) {
+      return answersCache[taskId];
+    }
 
     try {
       const response = await fetch(`${API_URL}/api/tasks/${taskId}/answers`, {
@@ -75,22 +76,28 @@ const TaskList: React.FC<TaskListProps> = ({
         },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch answers');
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch answers');
+      
       const data = await response.json();
-      setAnswers(prev => ({ ...prev, [taskId]: data.questions }));
+      setAnswersCache(prev => ({ ...prev, [taskId]: data.questions }));
+      return data.questions as QuestionAnswer[];
     } catch (err) {
-      setAnswerError((err as Error).message);
-    } finally {
-      setAnswerLoading(prev => ({ ...prev, [taskId]: false }));
+      throw err;
     }
   };
 
-  // Toggle sort direction
   const toggleSortDirection = () => {
     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handleRefresh = async () => {
+    if (!refetchTasks) return;
+    try {
+      setIsRefreshing(true);
+      await refetchTasks();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (loading) {
@@ -117,7 +124,8 @@ const TaskList: React.FC<TaskListProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={refetchTasks}
+                onClick={handleRefresh}
+                isLoading={isRefreshing}
                 leftIcon={<RefreshCw className="h-4 w-4" />}
                 aria-label="Refresh tasks"
               />
@@ -164,7 +172,7 @@ const TaskList: React.FC<TaskListProps> = ({
             <span>{error}</span>
             {refetchTasks && (
               <button 
-                onClick={refetchTasks}
+                onClick={handleRefresh}
                 className="text-error-600 hover:underline text-sm"
               >
                 Try again
@@ -173,51 +181,33 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         )}
         
-        {answerError && (
-          <div className="bg-warning-500/10 text-warning-500 p-3 rounded-lg">
-            {answerError}
+        {sortedTasks.length === 0 ? (
+          <div className="text-center py-12 text-dark-400">
+            <CheckSquare className="h-12 w-12 mx-auto mb-4 text-dark-600 opacity-50" />
+            <p className="text-lg font-medium mb-2">No tasks found</p>
+            <p className="text-sm">
+              {filter === 'all' 
+                ? 'Start by adding your first task!' 
+                : filter === 'pending' 
+                  ? 'No pending tasks. Great work!' 
+                  : 'No completed tasks yet.'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sortedTasks.map((task) => (
+              <TaskItem 
+                key={task._id} 
+                task={task} 
+                onMarkComplete={onMarkComplete}
+                onDelete={onDelete}
+                onGetAnswers={handleGetAnswers}
+                initialAnswers={answersCache[task._id]}
+              />
+            ))}
           </div>
         )}
       </div>
-      
-      {sortedTasks.length === 0 ? (
-        <div className="text-center py-12 text-dark-400">
-          <CheckSquare className="h-12 w-12 mx-auto mb-4 text-dark-600 opacity-50" />
-          <p className="text-lg font-medium mb-2">No tasks found</p>
-          <p className="text-sm">
-            {filter === 'all' 
-              ? 'Start by adding your first task!' 
-              : filter === 'pending' 
-                ? 'No pending tasks. Great work!' 
-                : 'No completed tasks yet.'}
-          </p>
-          {refetchTasks && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refetchTasks}
-              className="mt-4"
-              leftIcon={<RefreshCw className="h-4 w-4" />}
-            >
-              Refresh
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {sortedTasks.map((task) => (
-            <TaskItem 
-              key={task._id} 
-              task={task} 
-              onMarkComplete={onMarkComplete}
-              onDelete={onDelete}
-              onGetAnswers={() => handleGetAnswers(task._id)}
-              answers={answers[task._id]}
-              answerLoading={answerLoading[task._id] || false}
-            />
-          ))}
-        </div>
-      )}
     </GlassContainer>
   );
 };

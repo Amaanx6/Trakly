@@ -26,7 +26,7 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, deadline, priority } = req.body;
+    const { title, description, deadline, priority, status } = req.body;
     const userId = req.user.id;
     const pdfUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
@@ -35,6 +35,7 @@ export const createTask = async (req, res) => {
       description,
       deadline,
       priority,
+      status: status || 'pending',
       user: userId,
       pdfUrl,
     });

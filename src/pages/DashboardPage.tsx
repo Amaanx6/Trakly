@@ -75,6 +75,7 @@ const DashboardPage: React.FC = () => {
       <TaskList 
         tasks={tasks} 
         loading={loading} 
+        error={error ?? undefined}
         onMarkComplete={handleMarkComplete}
         onDelete={handleDeleteTask}
         refetchTasks={handleRefresh}
