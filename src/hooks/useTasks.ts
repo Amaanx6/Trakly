@@ -39,9 +39,17 @@ export const useTasks = (): UseTasksReturn => {
 
   const addTask = async (taskData: TaskInput) => {
     try {
+      // Validate taskData
+      if (!taskData.title?.trim()) {
+        throw new Error('Title is required');
+      }
+      if (!taskData.deadline) {
+        throw new Error('Deadline is required');
+      }
+
       const formData = new FormData();
-      formData.append('title', taskData.title);
-      formData.append('description', taskData.description);
+      formData.append('title', taskData.title.trim());
+      formData.append('description', taskData.description?.trim() || '');
       formData.append('deadline', taskData.deadline);
       formData.append('priority', taskData.priority);
       if (taskData.status) {
@@ -50,6 +58,9 @@ export const useTasks = (): UseTasksReturn => {
       if (taskData.pdf) {
         formData.append('pdf', taskData.pdf);
       }
+
+      // Log FormData entries
+      console.log('Sending task data:', Object.fromEntries(formData));
 
       const res = await axios.post(`${API_URL}/api/tasks`, formData, {
         headers: {
@@ -64,6 +75,7 @@ export const useTasks = (): UseTasksReturn => {
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.msg ||
+        err.message ||
         'Failed to add task. Please try again.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -153,4 +165,4 @@ export const useTasks = (): UseTasksReturn => {
   };
 };
 
-export type { TaskInput, Task };
+export { Task };

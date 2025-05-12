@@ -41,15 +41,29 @@ const TaskForm = () => {
     setError('');
     setSuccess('');
 
+    // Validate required fields
+    if (!formData.title.trim()) {
+      setError('Title is required');
+      return;
+    }
+    if (!formData.deadline) {
+      setError('Deadline is required');
+      return;
+    }
+
     const data = new FormData();
-    data.append('title', formData.title);
-    data.append('description', formData.description);
+    data.append('title', formData.title.trim());
+    data.append('description', formData.description.trim());
     data.append('deadline', formData.deadline);
     data.append('status', formData.status);
     data.append('priority', formData.priority);
     if (pdf) {
       data.append('pdf', pdf);
     }
+
+    // Log FormData for debugging
+    const formDataEntries = Object.fromEntries(data);
+    console.log('Submitting FormData:', formDataEntries);
 
     try {
       const response = await fetch(`${API_URL}/api/tasks`, {
@@ -62,6 +76,7 @@ const TaskForm = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Backend error response:', errorData);
         throw new Error(errorData.message || 'Failed to create task');
       }
 
@@ -76,6 +91,7 @@ const TaskForm = () => {
       setPdf(null);
       (document.getElementById('pdf-input') as HTMLInputElement).value = '';
     } catch (err) {
+      console.error('Task creation failed:', err);
       setError((err as Error).message);
     }
   };
@@ -94,6 +110,7 @@ const TaskForm = () => {
             className="w-full p-2 border rounded"
             required
             maxLength={100}
+            placeholder="Enter task title"
           />
         </div>
         <div className="mb-4">
@@ -104,6 +121,7 @@ const TaskForm = () => {
             onChange={handleChange}
             className="w-full p-2 border rounded"
             maxLength={500}
+            placeholder="Enter task description"
           />
         </div>
         <div className="mb-4">
