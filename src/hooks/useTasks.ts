@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/constants';
 
+export interface QuestionAnswer {
+  question: string;
+  answer: string;
+}
+
 export interface Task {
   _id: string;
   title: string;
@@ -12,6 +17,7 @@ export interface Task {
   user: string;
   createdAt: string;
   updatedAt: string;
+  pdfUrl?: string;
 }
 
 export interface TaskInput {
@@ -19,6 +25,7 @@ export interface TaskInput {
   description: string;
   deadline: string;
   priority: 'low' | 'medium' | 'high';
+  pdf?: File;
 }
 
 interface UseTasksReturn {
@@ -38,12 +45,22 @@ export const useTasks = (): UseTasksReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Add authorization header to axios requests
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  };
+
   // Fetch all tasks
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_URL}/api/tasks`);
+      const res = await axios.get(`${API_URL}/api/tasks`, getAuthConfig());
       setTasks(res.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch tasks');
@@ -55,7 +72,22 @@ export const useTasks = (): UseTasksReturn => {
   // Add a new task
   const addTask = async (taskData: TaskInput) => {
     try {
-      const res = await axios.post(`${API_URL}/api/tasks`, taskData);
+      const formData = new FormData();
+      formData.append('title', taskData.title);
+      formData.append('description', taskData.description);
+      formData.append('deadline', taskData.deadline);
+      formData.append('priority', taskData.priority);
+      if (taskData.pdf) {
+        formData.append('pdf', taskData.pdf);
+      }
+
+      const res = await axios.post(`${API_URL}/api/tasks`, formData, {
+        ...getAuthConfig(),
+        headers: {
+          ...getAuthConfig().headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       setTasks((prevTasks) => [...prevTasks, res.data]);
       return res.data;
     } catch (err: any) {
@@ -67,7 +99,7 @@ export const useTasks = (): UseTasksReturn => {
   // Update a task
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
-      const res = await axios.put(`${API_URL}/api/tasks/${id}`, updates);
+      const res = await axios.put(`${API_URL}/api/tasks/${id}`, updates, getAuthConfig());
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task._id === id ? res.data : task))
       );
@@ -81,7 +113,7 @@ export const useTasks = (): UseTasksReturn => {
   // Delete a task
   const deleteTask = async (id: string) => {
     try {
-      await axios.delete(`${API_URL}/api/tasks/${id}`);
+      await axios.delete(`${API_URL}/api/tasks/${id}`, getAuthConfig());
       setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete task');
@@ -94,7 +126,7 @@ export const useTasks = (): UseTasksReturn => {
     try {
       const res = await axios.put(`${API_URL}/api/tasks/${id}`, {
         status: 'completed',
-      });
+      }, getAuthConfig());
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task._id === id ? res.data : task))
       );

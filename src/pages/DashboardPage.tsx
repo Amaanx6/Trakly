@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, RefreshCw } from 'lucide-react';
 import { useTasks, TaskInput } from '../hooks/useTasks';
 import DashboardHeader from '../components/Dashboard/DashboardHeader';
 import StatsCard from '../components/Dashboard/StatsCard';
@@ -12,6 +12,7 @@ const DashboardPage: React.FC = () => {
   const { 
     tasks, 
     loading, 
+    error,
     fetchTasks, 
     addTask, 
     markTaskComplete,
@@ -21,6 +22,7 @@ const DashboardPage: React.FC = () => {
 
   const handleAddTask = async (taskData: TaskInput) => {
     await addTask(taskData);
+    setIsAddModalOpen(false);
   };
 
   const handleMarkComplete = async (id: string) => {
@@ -31,11 +33,35 @@ const DashboardPage: React.FC = () => {
     await deleteTask(id);
   };
 
+  const handleRefresh = async () => {
+    await fetchTasks();
+  };
+
   return (
     <div className="space-y-6">
       <DashboardHeader upcomingTasks={upcomingTasks} />
       
-      <div className="flex justify-end">
+      {error && (
+        <div className="bg-error-500/10 text-error-500 p-3 rounded-lg">
+          {error}
+          <button 
+            onClick={handleRefresh}
+            className="ml-2 text-error-600 hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      
+      <div className="flex justify-between items-center">
+        <Button 
+          onClick={handleRefresh}
+          variant="ghost"
+          leftIcon={<RefreshCw className="h-5 w-5" />}
+          isLoading={loading}
+        >
+          Refresh
+        </Button>
         <Button 
           onClick={() => setIsAddModalOpen(true)}
           leftIcon={<PlusCircle className="h-5 w-5" />}
@@ -51,6 +77,7 @@ const DashboardPage: React.FC = () => {
         loading={loading} 
         onMarkComplete={handleMarkComplete}
         onDelete={handleDeleteTask}
+        refetchTasks={handleRefresh}
       />
       
       <AddTaskModal 

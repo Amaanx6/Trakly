@@ -1,5 +1,10 @@
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // Get all tasks for a user
 export const getTasks = async (req, res) => {
@@ -22,13 +27,16 @@ export const createTask = async (req, res) => {
     }
 
     const { title, description, deadline, priority } = req.body;
+    const userId = req.user.id;
+    const pdfUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const task = await Task.create({
       title,
       description,
       deadline,
       priority,
-      user: req.user.id,
+      user: userId,
+      pdfUrl,
     });
 
     res.status(201).json(task);
@@ -96,5 +104,36 @@ export const deleteTask = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error while deleting task' });
+  }
+};
+
+// Get answers from PDF using Gemini API
+export const getAnswersFromPDF = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const task = await Task.findById(taskId);
+
+    if (!task || !task.pdfUrl) {
+      return res.status(404).json({ message: 'Task or PDF not found' });
+    }
+
+    // Upload PDF to Gemini File API
+    const file = await genAI.fileManager.uploadFile(task.pdfUrl, {
+      mimeType: 'application/pdf',
+      displayName: `Task-${taskId}.pdf`,
+    });
+
+    // Generate answers
+    const prompt = 'Extract key questions and their answers from the uploaded PDF. Return in JSON format with keys "questions" (array of objects with "question" and "answer").';
+    const result = await model.generateContent([
+      { fileData: { fileUri: file.uri, mimeType: file.mimeType } },
+      { text: prompt },
+    ]);
+    const answers = JSON.parse(result.response.text());
+
+    res.status(200).json(answers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error processing PDF' });
   }
 };

@@ -32,6 +32,10 @@ const taskSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Task must belong to a user'],
     },
+    pdfUrl: {
+      type: String, // Store PDF URL or path
+      trim: true,
+    },
   },
   { timestamps: true }
 );

@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { format, isToday, isTomorrow, isPast, formatDistanceToNow } from 'date-fns';
-import { Clock, Trash2, CheckCircle, AlertTriangle, Edit } from 'lucide-react';
-import { Task } from '../../hooks/useTasks';
+import { Clock, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Task, QuestionAnswer } from '../../hooks/useTasks';
 import Button from '../Common/Button';
 import GlassContainer from '../Common/GlassContainer';
+import { API_URL } from '../../config/constants';
 
 interface TaskItemProps {
   task: Task;
   onMarkComplete: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onGetAnswers?: () => void;
+  answers?: QuestionAnswer[];
+  answerLoading?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onMarkComplete, onDelete }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ 
+  task, 
+  onMarkComplete, 
+  onDelete,
+  onGetAnswers,
+  answers,
+  answerLoading = false
+}) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -86,6 +97,43 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onMarkComplete, onDelete }) =
             {isExpanded && (
               <div className="mt-2 mb-3 text-dark-300">
                 <p>{task.description || 'No description provided.'}</p>
+                
+                {task.pdfUrl && (
+                  <div className="mt-3">
+                    <a
+                      href={`${API_URL}${task.pdfUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-500 underline text-sm"
+                    >
+                      View Assignment PDF
+                    </a>
+                    {onGetAnswers && (
+                      <Button
+                        onClick={onGetAnswers}
+                        isLoading={answerLoading}
+                        className="ml-3"
+                        size="sm"
+                      >
+                        {answerLoading ? 'Loading...' : 'Get Answers'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {answers && answers.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-md font-semibold text-dark-200">Answers</h4>
+                    <div className="space-y-2 mt-2">
+                      {answers.map((qa, index) => (
+                        <div key={index} className="text-sm text-dark-300">
+                          <p><strong>Q: {qa.question}</strong></p>
+                          <p>A: {qa.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
