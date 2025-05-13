@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
-import { useTasks, TaskInput } from '../hooks/useTasks';
+import { useTasks } from '../hooks/useTasks';
 import DashboardHeader from '../components/Dashboard/DashboardHeader';
 import StatsCard from '../components/Dashboard/StatsCard';
 import TaskList from '../components/Dashboard/TaskList';
 import AddTaskModal from '../components/Task/AddTaskModal';
 import Button from '../components/Common/Button';
+import { TaskInput } from '../types';
 
 const DashboardPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -21,7 +22,13 @@ const DashboardPage: React.FC = () => {
   } = useTasks();
 
   const handleAddTask = async (taskData: TaskInput) => {
-    await addTask(taskData);
+    // Ensure priority is set (provide a default if undefined)
+    const taskWithRequiredFields = {
+      ...taskData,
+      priority: taskData.priority || "medium" // Default to medium if undefined
+    };
+    
+    await addTask(taskWithRequiredFields);
     setIsAddModalOpen(false);
   };
 

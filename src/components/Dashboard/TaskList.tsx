@@ -70,7 +70,6 @@ const TaskList: React.FC<TaskListProps> = ({
     }
 
     try {
-      console.log('TaskList fetching answers for taskId:', taskId);
       const response = await fetch(`${API_URL}/api/tasks/${taskId}/answers`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -83,12 +82,11 @@ const TaskList: React.FC<TaskListProps> = ({
       }
       
       const data = await response.json();
-      console.log('TaskList answers received:', data);
       const result = { questions: data.questions || [], message: data.message };
       setAnswersCache(prev => ({ ...prev, [taskId]: result }));
       return result;
     } catch (err: any) {
-      console.error('TaskList error fetching answers:', err);
+      console.error('Error fetching answers:', err);
       const errorResult = { questions: [], message: err.message || 'Failed to fetch answers' };
       setAnswersCache(prev => ({ ...prev, [taskId]: errorResult }));
       throw err;
@@ -130,60 +128,59 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <GlassContainer className="p-6 rounded-lg">
-      <style>
-        {`
-          .red-glow {
-            position: relative;
-          }
-          .red-glow::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
-            animation: glow 2s ease-in-out infinite;
-            z-index: -1;
-            border-radius: 8px;
-          }
-          .yellow-glow {
-            position: relative;
-          }
-          .yellow-glow::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, transparent 70%);
-            animation: glow 2s ease-in-out infinite;
-            z-index: -1;
-            border-radius: 8px;
-          }
-          .green-glow {
-            position: relative;
-          }
-          .green-glow::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: radial-gradient(circle, rgba(0, 255, 0, 0.3) 0%, transparent 70%);
-            animation: glow 2s ease-in-out infinite;
-            z-index: -1;
-            border-radius: 8px;
-          }
-          @keyframes glow {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-          }
-        `}
-      </style>
+      <style>{`
+        .red-glow {
+          position: relative;
+        }
+        .red-glow::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+          animation: glow 2s ease-in-out infinite;
+          z-index: -1;
+          border-radius: 8px;
+        }
+        .yellow-glow {
+          position: relative;
+        }
+        .yellow-glow::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, transparent 70%);
+          animation: glow 2s ease-in-out infinite;
+          z-index: -1;
+          border-radius: 8px;
+        }
+        .green-glow {
+          position: relative;
+        }
+        .green-glow::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: radial-gradient(circle, rgba(0, 255, 0, 0.3) 0%, transparent 70%);
+          animation: glow 2s ease-in-out infinite;
+          z-index: -1;
+          border-radius: 8px;
+        }
+        @keyframes glow {
+          0% { opacity: 0.5; }
+          50% { opacity: 1; }
+          100% { opacity: 0.5; }
+        }
+      `}</style>
+      
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">

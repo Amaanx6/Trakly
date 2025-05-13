@@ -5,9 +5,9 @@ export interface Task {
   deadline: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'completed';
-  user: string;
+  user?: string;
   pdfUrl?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface TaskInput {
