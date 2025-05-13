@@ -11,6 +11,7 @@ export interface Task {
   status: 'pending' | 'completed';
   priority: 'low' | 'medium' | 'high';
   pdfUrl?: string;
+  type?: 'assignment' | 'surprise test';
 }
 
 export interface TaskInput {
@@ -20,6 +21,7 @@ export interface TaskInput {
   priority?: 'low' | 'medium' | 'high';
   pdf?: File;
   reminder?: '1hour' | '1day' | '';
+  type?: 'assignment' | 'surprise test';
 }
 
 export const useTasks = () => {
@@ -60,6 +62,7 @@ export const useTasks = () => {
       if (taskData.priority) formData.append('priority', taskData.priority);
       if (taskData.pdf) formData.append('pdf', taskData.pdf);
       if (taskData.reminder) formData.append('reminder', taskData.reminder);
+      if (taskData.type) formData.append('type', taskData.type);
 
       const res = await axios.post<Task>('/api/tasks', formData, {
         headers: {

@@ -13,19 +13,34 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [tempDeadline, setTempDeadline] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [pdf, setPdf] = useState<File | null>(null);
   const [reminder, setReminder] = useState<'1hour' | '1day' | ''>('');
+  const [type, setType] = useState<'assignment' | 'surprise test'>('assignment');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onAddTask({ title, description, deadline, priority, pdf: pdf || undefined, reminder });
+    if (!deadline) {
+      alert('Please confirm the deadline by clicking OK.');
+      return;
+    }
+    await onAddTask({ title, description, deadline, priority, pdf: pdf || undefined, reminder, type });
     setTitle('');
     setDescription('');
     setDeadline('');
+    setTempDeadline('');
     setPriority('medium');
     setPdf(null);
     setReminder('');
+    setType('assignment');
+    onClose();
+  };
+
+  const handleDeadlineConfirm = () => {
+    if (tempDeadline) {
+      setDeadline(tempDeadline);
+    }
   };
 
   if (!isOpen) return null;
@@ -42,7 +57,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="title" className="block text-dark-300 mb-2">
-              Title
+              Title <span className="text-error-500">*</span>
             </label>
             <input
               type="text"
@@ -52,6 +67,20 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               className="w-full p-2 rounded bg-dark-700 text-dark-100"
               required
             />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="type" className="block text-dark-300 mb-2">
+              Type
+            </label>
+            <select
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value as 'assignment' | 'surprise test')}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
+            >
+              <option value="assignment">Assignment</option>
+              <option value="surprise test">Surprise Test</option>
+            </select>
           </div>
           <div className="mb-4">
             <label htmlFor="description" className="block text-dark-300 mb-2">
@@ -66,16 +95,21 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
           </div>
           <div className="mb-4">
             <label htmlFor="deadline" className="block text-dark-300 mb-2">
-              Deadline
+              Deadline <span className="text-error-500">*</span>
             </label>
-            <input
-              type="datetime-local"
-              id="deadline"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="w-full p-2 rounded bg-dark-700 text-dark-100"
-              required
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="datetime-local"
+                id="deadline"
+                value={tempDeadline}
+                onChange={(e) => setTempDeadline(e.target.value)}
+                className="w-full p-2 rounded bg-dark-700 text-dark-100"
+                required
+              />
+              <Button type="button" onClick={handleDeadlineConfirm}>
+                OK
+              </Button>
+            </div>
           </div>
           <div className="mb-4">
             <label htmlFor="priority" className="block text-dark-300 mb-2">
