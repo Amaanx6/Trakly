@@ -1,6 +1,8 @@
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import fs from 'fs/promises';
+import path from 'path';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -17,11 +19,9 @@ export const getTasks = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
-    // Log raw request data before validation
     console.log('Raw request body:', req.body);
     console.log('Received file:', req.file);
 
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.error('Validation errors:', errors.array());
@@ -31,16 +31,13 @@ export const createTask = async (req, res) => {
     const { title, description, deadline, priority, status } = req.body;
     const userId = req.user?.id;
 
-    // Log parsed body after validation
     console.log('Parsed request body:', { title, description, deadline, priority, status });
 
-    // Verify user authentication
     if (!userId) {
       console.error('User ID missing in request');
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    // Ensure required fields
     if (!title?.trim() || !deadline) {
       console.error('Missing required fields:', { title, deadline });
       return res.status(400).json({ message: 'Title is required' });
@@ -107,8 +104,9 @@ export const deleteTask = async (req, res) => {
 export const getAnswersFromPDF = async (req, res) => {
   let pdfParse;
   try {
-    // Lazy-load pdf-parse to avoid initialization errors
+    console.log('Loading pdf-parse module');
     pdfParse = (await import('pdf-parse')).default;
+    console.log('pdf-parse loaded successfully');
   } catch (err) {
     console.error('Error loading pdf-parse:', err);
     return res.status(500).json({ message: 'Failed to load PDF parser', error: err.message });
@@ -116,40 +114,82 @@ export const getAnswersFromPDF = async (req, res) => {
 
   try {
     const { taskId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    console.log('Fetching task:', { taskId, userId });
 
-    const task = await Task.findOne({ _id: taskId, user: userId });
-    if (!task || !task.pdfUrl) {
-      return res.status(404).json({ message: 'Task or PDF not found' });
+    if (!userId) {
+      console.error('User ID missing in request');
+      return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    const pdfPath = `./${task.pdfUrl}`;
+    const task = await Task.findOne({ _id: taskId, user: userId });
+    if (!task) {
+      console.error('Task not found for user:', { taskId, userId });
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    if (!task.pdfUrl) {
+      console.error('No PDF associated with task:', taskId);
+      return res.status(404).json({ message: 'PDF not found for this task' });
+    }
+
+    // Resolve absolute path for pdfUrl
+    const pdfPath = path.resolve(process.cwd(), task.pdfUrl.replace(/^\//, ''));
+    console.log('Resolved PDF path:', pdfPath);
+
+    // Check if PDF file exists
+    try {
+      await fs.access(pdfPath, fs.constants.R_OK);
+      console.log('PDF file exists and is readable:', pdfPath);
+      const stats = await fs.stat(pdfPath);
+      console.log('PDF file stats:', { size: stats.size, isFile: stats.isFile() });
+    } catch (err) {
+      console.error('PDF file not found or inaccessible:', pdfPath, err);
+      return res.status(500).json({ message: 'PDF file not found or inaccessible', error: err.message });
+    }
+
     let dataBuffer;
     try {
-      dataBuffer = await pdfParse(pdfPath);
+      console.log('Parsing PDF:', pdfPath);
+      // Read file to buffer to ensure pdf-parse can process it
+      const pdfBuffer = await fs.readFile(pdfPath);
+      dataBuffer = await pdfParse(pdfBuffer);
+      console.log('PDF parsed successfully, text length:', dataBuffer.text.length);
     } catch (err) {
       console.error('Error parsing PDF:', err);
       return res.status(500).json({ message: 'Failed to parse PDF', error: err.message });
     }
 
     const pdfText = dataBuffer.text;
+    console.log('PDF text extracted, first 100 chars:', pdfText.substring(0, 100));
 
     const prompt = `Extract questions and their answers from the following PDF text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array:\n\n${pdfText}`;
 
-    const result = await model.generateContent(prompt);
+    console.log('Sending prompt to Google Generative AI, prompt length:', prompt.length);
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+    } catch (err) {
+      console.error('Error calling Google Generative AI:', err);
+      return res.status(500).json({ message: 'Failed to process PDF content with AI', error: err.message });
+    }
+
     const response = await result.response;
     let questions;
 
     try {
-      questions = JSON.parse(response.text());
+      const text = response.text();
+      console.log('AI response received, first 100 chars:', text.substring(0, 100));
+      questions = JSON.parse(text);
       if (!Array.isArray(questions)) {
-        throw new Error('Response is not an array');
+        throw new Error('AI response is not an array');
       }
     } catch (err) {
       console.error('Error parsing AI response:', err);
+      console.log('Raw AI response:', response.text());
       questions = [];
     }
 
+    console.log('Returning questions:', questions);
     res.status(200).json({ questions });
   } catch (err) {
     console.error('Error processing PDF:', err);
