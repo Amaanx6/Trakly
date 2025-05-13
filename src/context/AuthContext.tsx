@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config/constants';
 
@@ -33,6 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   axios.defaults.baseURL = API_URL;
   if (token) {
@@ -40,29 +43,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        setIsLoading(false);
-        setIsAuthenticated(false);
-        return;
-      }
+    const initializeAuth = async () => {
       try {
-        const res = await axios.get<AuthResponse>('/api/auth/me');
-        setUser(res.data.user);
-        setIsAuthenticated(true);
-        setIsLoading(false);
+        // Check URL query parameters for Google OAuth token
+        const searchParams = new URLSearchParams(location.search);
+        const googleToken = searchParams.get('token');
+        const newUser = searchParams.get('newUser') === 'true';
+
+        console.log('AuthContext: Checking query params:', { googleToken, newUser });
+
+        if (googleToken) {
+          try {
+            await loginWithGoogle(googleToken);
+            // Clear query parameters and navigate to dashboard
+            navigate('/dashboard', { replace: true });
+            if (newUser) {
+              console.log('AuthContext: New user signed up');
+            }
+          } catch (err) {
+            console.error('AuthContext: Google login failed:', err);
+            navigate('/login', { replace: true });
+          }
+        } else if (token) {
+          // Verify existing token
+          try {
+            const res = await axios.get<AuthResponse>('/api/auth/me');
+            setUser(res.data.user);
+            setIsAuthenticated(true);
+            console.log('AuthContext: Token verified:', res.data.user);
+          } catch (err) {
+            console.error('AuthContext: Token verification failed:', err);
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+            setIsAuthenticated(false);
+            delete axios.defaults.headers.common['Authorization'];
+          }
+        }
       } catch (err: any) {
-        console.error('Token verification failed:', err);
+        console.error('AuthContext: Initialization error:', err);
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
         setIsAuthenticated(false);
         delete axios.defaults.headers.common['Authorization'];
+      } finally {
         setIsLoading(false);
       }
     };
-    verifyToken();
-  }, [token]);
+
+    initializeAuth();
+  }, [location, navigate]);
 
   const login = async (email: string, password: string) => {
     setError(null);
@@ -74,9 +105,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       setUser(res.data.user);
       setIsAuthenticated(true);
+      console.log('AuthContext: Login successful:', res.data.user);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed';
       setError(message);
+      console.error('AuthContext: Login error:', message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
@@ -93,9 +126,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       setUser(res.data.user);
       setIsAuthenticated(true);
+      console.log('AuthContext: Signup successful:', res.data.user);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Signup failed';
       setError(message);
+      console.error('AuthContext: Signup error:', message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
@@ -112,12 +147,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await axios.get<AuthResponse>('/api/auth/me');
       setUser(res.data.user);
       setIsAuthenticated(true);
+      console.log('AuthContext: Google login successful:', res.data.user);
     } catch (err: any) {
       localStorage.removeItem('token');
       setToken(null);
       delete axios.defaults.headers.common['Authorization'];
       const message = err.response?.data?.message || 'Google authentication failed';
       setError(message);
+      console.error('AuthContext: Google login error:', message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
@@ -131,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     setError(null);
     delete axios.defaults.headers.common['Authorization'];
+    navigate('/login', { replace: true });
   };
 
   return (
