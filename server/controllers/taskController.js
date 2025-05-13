@@ -102,13 +102,13 @@ export const deleteTask = async (req, res) => {
 };
 
 export const getAnswersFromPDF = async (req, res) => {
-  let pdfParse;
+  let PDFParser;
   try {
-    console.log('Loading pdf-parse module');
-    pdfParse = (await import('pdf-parse')).default;
-    console.log('pdf-parse loaded successfully');
+    console.log('Loading pdf2json module');
+    PDFParser = (await import('pdf2json')).default;
+    console.log('pdf2json loaded successfully');
   } catch (err) {
-    console.error('Error loading pdf-parse:', err);
+    console.error('Error loading pdf2json:', err);
     return res.status(500).json({ message: 'Failed to load PDF parser', error: err.message });
   }
 
@@ -132,36 +132,42 @@ export const getAnswersFromPDF = async (req, res) => {
       return res.status(404).json({ message: 'PDF not found for this task' });
     }
 
-    // Resolve absolute path for pdfUrl
     const pdfPath = path.resolve(process.cwd(), task.pdfUrl.replace(/^\//, ''));
     console.log('Resolved PDF path:', pdfPath);
 
-    // Check if PDF file exists
-    let pdfBuffer;
     try {
       await fs.access(pdfPath, fs.constants.R_OK);
       console.log('PDF file exists and is readable:', pdfPath);
       const stats = await fs.stat(pdfPath);
       console.log('PDF file stats:', { size: stats.size, isFile: stats.isFile() });
-      pdfBuffer = await fs.readFile(pdfPath);
-      console.log('PDF buffer read, size:', pdfBuffer.length);
     } catch (err) {
       console.error('PDF file not found or inaccessible:', pdfPath, err);
       return res.status(500).json({ message: 'PDF file not found or inaccessible', error: err.message });
     }
 
-    let dataBuffer;
+    let pdfText = '';
     try {
-      console.log('Parsing PDF buffer, size:', pdfBuffer.length);
-      dataBuffer = await pdfParse(pdfBuffer);
-      console.log('PDF parsed successfully, text length:', dataBuffer.text.length);
+      console.log('Parsing PDF:', pdfPath);
+      const pdfParser = new PDFParser();
+      pdfText = await new Promise((resolve, reject) => {
+        pdfParser.on('pdfParser_dataError', (errData) => {
+          reject(new Error(`PDF parsing error: ${errData.parserError}`));
+        });
+        pdfParser.on('pdfParser_dataReady', (pdfData) => {
+          const text = pdfData.Pages.map((page) =>
+            page.Texts.map((text) => decodeURIComponent(text.R[0].T)).join(' ')
+          ).join('\n');
+          resolve(text);
+        });
+        pdfParser.loadPDF(pdfPath);
+      });
+      console.log('PDF parsed successfully, text length:', pdfText.length);
     } catch (err) {
       console.error('Error parsing PDF:', err);
       console.error('Error stack:', err.stack);
       return res.status(500).json({ message: 'Failed to parse PDF', error: err.message });
     }
 
-    const pdfText = dataBuffer.text;
     console.log('PDF text extracted, first 100 chars:', pdfText.substring(0, 100));
 
     const prompt = `Extract questions and their answers from the following PDF text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array:\n\n${pdfText}`;
@@ -188,7 +194,7 @@ export const getAnswersFromPDF = async (req, res) => {
       }
     } catch (err) {
       console.error('Error parsing AI response:', err);
-      console.log('Raw AI response:', response.text().substring(0, 500)); // Limit for brevity
+      console.log('Raw AI response:', text.substring(0, 500)); // Limit for brevity
       questions = [];
     }
 
