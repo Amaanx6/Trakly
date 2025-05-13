@@ -162,7 +162,7 @@ export const getAnswersFromPDF = async (req, res) => {
         pdfParser.loadPDF(pdfPath);
       });
       console.log('PDF parsed successfully, text length:', pdfText.length);
-      console.log('PDF text (first 500 chars):', pdfText.substring(0, 500));
+      console.log('PDF text (first 2000 chars):', pdfText.substring(0, 2000));
     } catch (err) {
       console.error('Error parsing PDF:', err);
       console.error('Error stack:', err.stack);
@@ -174,7 +174,16 @@ export const getAnswersFromPDF = async (req, res) => {
       return res.status(200).json({ questions: [], message: 'No text extracted from PDF' });
     }
 
-    const prompt = `You are an expert at extracting structured data from text. Analyze the following PDF text and identify question-answer pairs. A question is typically followed by an answer, which may be in a sentence, paragraph, or list format. Questions may be numbered (e.g., "1."), bulleted, or in plain text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no question-answer pairs are found, return an empty array. Example output: [{"question": "What is the capital of France?", "answer": "Paris"}]:\n\n${pdfText}`;
+    const prompt = `You are an expert at extracting structured data from text. Analyze the following PDF text and identify question-answer pairs. Questions may be:
+- Numbered (e.g., "1.", "1)").
+- Bulleted (e.g., "•", "-").
+- Plain text ending with "?" or implying a query.
+- In headings, paragraphs, or lists.
+Answers may follow immediately, be in a separate paragraph, or appear after labels like "Answer:", "Ans:", or "A:". They may also be implied in the text following a question without explicit labels. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array. Handle cases where:
+- Questions are standalone with answers in a separate section.
+- Answers are in tables or lists.
+- Text is unstructured but implies questions and answers.
+Example output: [{"question": "What is the capital of France?", "answer": "Paris"}]:\n\n${pdfText}`;
 
     console.log('Sending prompt to Google Generative AI, prompt length:', prompt.length);
     let result;
