@@ -3,37 +3,40 @@ import path from 'path';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log('Saving file to uploads/');
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    const filename = `${Date.now()}-${file.originalname}`;
-    console.log('Generated filename:', filename);
-    cb(null, filename);
+    cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    console.log('File accepted:', file.originalname);
-    cb(null, true);
-  } else {
-    console.error('File rejected:', file.originalname, 'Only PDFs allowed');
-    cb(new Error('Only PDFs are allowed'), false);
+  const filetypes = /pdf/;
+  const mimetype = filetypes.test(file.mimetype);
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+  if (mimetype && extname) {
+    return cb(null, true);
   }
+  cb(new Error('Error: File upload only supports PDF format!'));
 };
 
 const upload = multer({
   storage,
-  fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter,
 }).single('pdf');
 
 export default (req, res, next) => {
   upload(req, res, (err) => {
-    if (err) {
-      console.error('Multer error:', err.message);
-      return res.status(400).json({ message: err.message });
+    console.log('Multer parsed body:', req.body);
+    console.log('Multer parsed file:', req.file);
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ message: 'File upload error', error: err.message });
+    } if (err) {
+      console.error('File upload error:', err);
+      return res.status(400).json({ message: 'File upload error', error: err.message });
     }
     next();
   });

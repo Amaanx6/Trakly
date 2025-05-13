@@ -50,7 +50,9 @@ export const useTasks = (): UseTasksReturn => {
       const formData = new FormData();
       formData.append('title', taskData.title.trim());
       formData.append('description', taskData.description?.trim() || '');
-      formData.append('deadline', taskData.deadline);
+      // Convert deadline to ISO 8601 format
+      const deadline = new Date(taskData.deadline).toISOString();
+      formData.append('deadline', deadline);
       formData.append('priority', taskData.priority);
       if (taskData.status) {
         formData.append('status', taskData.status);
@@ -166,7 +168,3 @@ export const useTasks = (): UseTasksReturn => {
     getAnswers,
   };
 };
-
-export type { TaskInput };
-  export type { Task };
-

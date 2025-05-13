@@ -16,7 +16,7 @@ router.use(protect);
 
 router.route('/')
   .get(getTasks)
-  .post(taskValidator, upload, createTask);
+  .post(upload, taskValidator, createTask);
 
 router.route('/:id')
   .put(updateTask)
