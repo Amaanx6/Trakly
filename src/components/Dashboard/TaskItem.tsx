@@ -11,8 +11,8 @@ interface TaskItemProps {
   task: Task;
   onMarkComplete: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onGetAnswers?: (taskId: string) => Promise<QuestionAnswer[]>;
-  initialAnswers?: QuestionAnswer[];
+  onGetAnswers?: (taskId: string) => Promise<{ questions: QuestionAnswer[], message?: string }>;
+  initialAnswers?: { questions: QuestionAnswer[], message?: string };
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -20,12 +20,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onMarkComplete, 
   onDelete, 
   onGetAnswers,
-  initialAnswers = [] 
+  initialAnswers = { questions: [], message: undefined }
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [answers, setAnswers] = useState<QuestionAnswer[]>(initialAnswers);
+  const [answers, setAnswers] = useState<QuestionAnswer[]>(initialAnswers.questions);
+  const [answerMessage, setAnswerMessage] = useState<string | undefined>(initialAnswers.message);
   const [answerLoading, setAnswerLoading] = useState(false);
   const [answerError, setAnswerError] = useState<string>('');
 
@@ -52,12 +53,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
     
     setAnswerLoading(true);
     setAnswerError('');
+    setAnswerMessage(undefined);
     
     try {
-      const fetchedAnswers = await onGetAnswers(task._id);
-      setAnswers(fetchedAnswers);
-    } catch (err) {
-      setAnswerError((err as Error).message);
+      const response = await onGetAnswers(task._id);
+      console.log('TaskItem received answers:', response);
+      setAnswers(response.questions);
+      setAnswerMessage(response.message);
+      setIsExpanded(true);
+    } catch (err: any) {
+      console.error('TaskItem error:', err);
+      setAnswerError(err.message || 'Failed to fetch answers');
+      setIsExpanded(true);
     } finally {
       setAnswerLoading(false);
     }
@@ -129,12 +136,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
                           onClick={handleGetAnswers}
                           isLoading={answerLoading}
                           className="ml-4"
-                          disabled={answers.length > 0}
+                          disabled={answerLoading}
                         >
-                          {answers.length > 0 ? 'Answers Loaded' : 'Get Answers'}
+                          Get Answers
                         </Button>
                         {answerError && <p className="text-error-500 mt-2">{answerError}</p>}
-                        {answers.length > 0 && (
+                        {answerMessage && <p className="text-dark-300 mt-2">{answerMessage}</p>}
+                        {answers.length > 0 ? (
                           <div className="mt-4">
                             <h4 className="text-md font-semibold text-dark-200">Answers</h4>
                             <div className="space-y-2 mt-2">
@@ -146,6 +154,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                               ))}
                             </div>
                           </div>
+                        ) : (
+                          !answerMessage && !answerError && answers.length === 0 && (
+                            <p className="text-dark-300 mt-2">No answers loaded yet.</p>
+                          )
                         )}
                       </>
                     )}

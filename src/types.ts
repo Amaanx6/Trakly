@@ -1,19 +1,18 @@
 export interface Task {
   _id: string;
   title: string;
-  description: string;
+  description?: string;
   deadline: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'completed';
   user: string;
   pdfUrl?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface TaskInput {
   title: string;
-  description: string;
+  description?: string;
   deadline: string;
   priority: 'low' | 'medium' | 'high';
   status?: 'pending' | 'completed';
@@ -23,8 +22,4 @@ export interface TaskInput {
 export interface QuestionAnswer {
   question: string;
   answer: string;
-}
-
-export interface AnswersResponse {
-  questions: QuestionAnswer[];
 }

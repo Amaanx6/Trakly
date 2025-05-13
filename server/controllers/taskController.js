@@ -162,15 +162,19 @@ export const getAnswersFromPDF = async (req, res) => {
         pdfParser.loadPDF(pdfPath);
       });
       console.log('PDF parsed successfully, text length:', pdfText.length);
+      console.log('PDF text (first 500 chars):', pdfText.substring(0, 500));
     } catch (err) {
       console.error('Error parsing PDF:', err);
       console.error('Error stack:', err.stack);
       return res.status(500).json({ message: 'Failed to parse PDF', error: err.message });
     }
 
-    console.log('PDF text extracted, first 100 chars:', pdfText.substring(0, 100));
+    if (!pdfText.trim()) {
+      console.log('No text extracted from PDF');
+      return res.status(200).json({ questions: [], message: 'No text extracted from PDF' });
+    }
 
-    const prompt = `Extract questions and their answers from the following PDF text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array:\n\n${pdfText}`;
+    const prompt = `You are an expert at extracting structured data from text. Analyze the following PDF text and identify question-answer pairs. A question is typically followed by an answer, which may be in a sentence, paragraph, or list format. Questions may be numbered (e.g., "1."), bulleted, or in plain text. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no question-answer pairs are found, return an empty array. Example output: [{"question": "What is the capital of France?", "answer": "Paris"}]:\n\n${pdfText}`;
 
     console.log('Sending prompt to Google Generative AI, prompt length:', prompt.length);
     let result;
@@ -187,19 +191,22 @@ export const getAnswersFromPDF = async (req, res) => {
 
     try {
       const text = response.text();
-      console.log('AI response received, first 100 chars:', text.substring(0, 100));
+      console.log('AI response received, full text:', text);
       questions = JSON.parse(text);
       if (!Array.isArray(questions)) {
         throw new Error('AI response is not an array');
       }
     } catch (err) {
       console.error('Error parsing AI response:', err);
-      console.log('Raw AI response:', response.text().substring(0, 500)); // Fixed: Use response.text()
+      console.log('Raw AI response:', response.text().substring(0, 1000));
       questions = [];
     }
 
     console.log('Returning questions:', questions);
-    res.status(200).json({ questions });
+    res.status(200).json({ 
+      questions, 
+      message: questions.length ? undefined : pdfText.trim() ? 'No question-answer pairs found in the PDF text' : 'No text extracted from PDF' 
+    });
   } catch (err) {
     console.error('Error processing PDF:', err);
     console.error('Error stack:', err.stack);

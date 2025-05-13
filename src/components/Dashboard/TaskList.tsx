@@ -30,7 +30,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortType>('deadline');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [answersCache, setAnswersCache] = useState<Record<string, QuestionAnswer[]>>({});
+  const [answersCache, setAnswersCache] = useState<Record<string, { questions: QuestionAnswer[], message?: string }>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredTasks = useMemo(() => {
@@ -70,18 +70,27 @@ const TaskList: React.FC<TaskListProps> = ({
     }
 
     try {
+      console.log('TaskList fetching answers for taskId:', taskId);
       const response = await fetch(`${API_URL}/api/tasks/${taskId}/answers`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch answers');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch answers');
+      }
       
       const data = await response.json();
-      setAnswersCache(prev => ({ ...prev, [taskId]: data.questions }));
-      return data.questions as QuestionAnswer[];
-    } catch (err) {
+      console.log('TaskList answers received:', data);
+      const result = { questions: data.questions || [], message: data.message };
+      setAnswersCache(prev => ({ ...prev, [taskId]: result }));
+      return result;
+    } catch (err: any) {
+      console.error('TaskList error fetching answers:', err);
+      const errorResult = { questions: [], message: err.message || 'Failed to fetch answers' };
+      setAnswersCache(prev => ({ ...prev, [taskId]: errorResult }));
       throw err;
     }
   };

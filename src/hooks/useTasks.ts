@@ -13,7 +13,7 @@ interface UseTasksReturn {
   deleteTask: (id: string) => Promise<void>;
   markTaskComplete: (id: string) => Promise<Task>;
   upcomingTasks: Task[];
-  getAnswers: (taskId: string) => Promise<QuestionAnswer[]>;
+  getAnswers: (taskId: string) => Promise<{ questions: QuestionAnswer[], message?: string }>;
 }
 
 export const useTasks = (): UseTasksReturn => {
@@ -39,7 +39,6 @@ export const useTasks = (): UseTasksReturn => {
 
   const addTask = async (taskData: TaskInput) => {
     try {
-      // Validate taskData
       if (!taskData.title?.trim()) {
         throw new Error('Title is required');
       }
@@ -50,7 +49,6 @@ export const useTasks = (): UseTasksReturn => {
       const formData = new FormData();
       formData.append('title', taskData.title.trim());
       formData.append('description', taskData.description?.trim() || '');
-      // Convert deadline to ISO 8601 format
       const deadline = new Date(taskData.deadline).toISOString();
       formData.append('deadline', deadline);
       formData.append('priority', taskData.priority);
@@ -61,9 +59,7 @@ export const useTasks = (): UseTasksReturn => {
         formData.append('pdf', taskData.pdf);
       }
 
-      // Log FormData entries
-      const formDataEntries = Object.fromEntries(formData);
-      console.log('useTasks addTask submitting FormData:', formDataEntries);
+      console.log('useTasks addTask submitting FormData:', Object.fromEntries(formData));
 
       const res = await axios.post(`${API_URL}/api/tasks`, formData, {
         headers: {
@@ -134,15 +130,22 @@ export const useTasks = (): UseTasksReturn => {
   };
 
   const getAnswers = async (taskId: string) => {
+    setLoading(true);
+    setError(null);
     try {
+      console.log('Fetching answers for taskId:', taskId);
       const res = await axios.get(`${API_URL}/api/tasks/${taskId}/answers`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      return res.data.questions;
+      console.log('Answers received:', res.data);
+      return { questions: res.data.questions || [], message: res.data.message };
     } catch (err: any) {
       console.error('Error fetching answers:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to fetch answers');
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,3 +171,5 @@ export const useTasks = (): UseTasksReturn => {
     getAnswers,
   };
 };
+
+export type { Task };
