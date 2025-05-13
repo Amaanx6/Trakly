@@ -35,7 +35,7 @@ const Button: React.FC<ButtonProps> = ({
     accent: 'bg-accent-600 hover:bg-accent-700 text-white',
     ghost: 'bg-transparent hover:bg-dark-800 text-dark-200 border border-dark-700',
     danger: 'bg-error-600 hover:bg-error-700 text-white',
-    outline: 'bg-transparent border border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white',
+    outline: 'bg-transparent border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white',
   };
 
   // Disabled state
