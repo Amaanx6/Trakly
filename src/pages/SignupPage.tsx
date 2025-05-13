@@ -30,7 +30,7 @@ const SignupPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-100 to-secondary-100">
-      <div className="glass-card p-8 w-full max-w-md">
+      <div className="glass-card p-8 w-full max-w-md rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-dark-500 mb-6 text-center">Sign Up</h2>
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -41,7 +41,7 @@ const SignupPage = () => {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/80"
               required
             />
           </div>
@@ -52,7 +52,7 @@ const SignupPage = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/80"
               required
             />
           </div>
@@ -63,14 +63,14 @@ const SignupPage = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="mt-1 w-full px-3 py-2 border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/80"
               required
             />
           </div>
-          <Button type="submit" className="w-full">Sign Up</Button>
+          <Button type="submit" className="w-full bg-primary-500 text-white hover:bg-primary-600">Sign Up</Button>
         </form>
         <div className="mt-4 text-center">
-          <Button variant="outline" onClick={handleGoogleSignup} className="w-full">
+          <Button variant="outline" onClick={handleGoogleSignup} className="w-full border-primary-500 text-primary-500 hover:bg-primary-50">
             Sign Up with Google
           </Button>
         </div>
