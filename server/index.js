@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 const uploadsDir = path.join(process.cwd(), 'Uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(UploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const corsOptions = {
