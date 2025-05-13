@@ -6,7 +6,6 @@ import StatsCard from '../components/Dashboard/StatsCard';
 import TaskList from '../components/Dashboard/TaskList';
 import AddTaskModal from '../components/Task/AddTaskModal';
 import Button from '../components/Common/Button';
-import { TaskInput } from '../types';
 
 const DashboardPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -21,14 +20,14 @@ const DashboardPage: React.FC = () => {
     upcomingTasks
   } = useTasks();
 
-  const handleAddTask = async (taskData: TaskInput) => {
-    // Ensure priority is set (provide a default if undefined)
-    const taskWithRequiredFields = {
-      ...taskData,
-      priority: taskData.priority || "medium" // Default to medium if undefined
-    };
+  // Use the same type signature that AddTaskModal is expecting
+  const handleAddTask: typeof addTask = async (taskData) => {
+    // If priority is undefined, set a default value
+    if (!taskData.priority) {
+      taskData.priority = "medium";
+    }
     
-    await addTask(taskWithRequiredFields);
+    await addTask(taskData);
     setIsAddModalOpen(false);
   };
 
