@@ -4,13 +4,16 @@ import { ArrowRight } from 'lucide-react';
 import Button from '../Common/Button';
 import GlassContainer from '../Common/GlassContainer';
 import { useAuth } from '../../hooks/useAuth';
-import Loader from '../Common/Loader'; // Ensure this matches App.tsx styling
+import Loader from '../Common/Loader';
 
 const CTASection: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  console.log('CTASection Auth State:', { isAuthenticated, user, isLoading, token: localStorage.getItem('token') });
+
   const handleDashboardClick = () => {
+    console.log('Navigating to dashboard');
     navigate('/dashboard');
   };
 

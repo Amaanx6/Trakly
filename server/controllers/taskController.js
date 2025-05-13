@@ -9,7 +9,7 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export const getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const tasks = await Task.find({ user: req.user.id }).sort({ deadline: 1 });
     res.status(200).json(tasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
@@ -28,10 +28,10 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, deadline, priority, status } = req.body;
+    const { title, description, deadline, priority, status, reminder } = req.body;
     const userId = req.user?.id;
 
-    console.log('Parsed request body:', { title, description, deadline, priority, status });
+    console.log('Parsed request body:', { title, description, deadline, priority, status, reminder });
 
     if (!userId) {
       console.error('User ID missing in request');
@@ -40,10 +40,17 @@ export const createTask = async (req, res) => {
 
     if (!title?.trim() || !deadline) {
       console.error('Missing required fields:', { title, deadline });
-      return res.status(400).json({ message: 'Title is required' });
+      return res.status(400).json({ message: 'Title and deadline are required' });
     }
 
     const pdfUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    let reminderTime;
+    if (reminder === '1hour') {
+      reminderTime = new Date(new Date(deadline).getTime() - 60 * 60 * 1000);
+    } else if (reminder === '1day') {
+      reminderTime = new Date(new Date(deadline).getTime() - 24 * 60 * 60 * 1000);
+    }
 
     const task = await Task.create({
       title: title.trim(),
@@ -53,6 +60,7 @@ export const createTask = async (req, res) => {
       status: status || 'pending',
       user: userId,
       pdfUrl,
+      reminderTime,
     });
 
     console.log('Task created:', task._id);
@@ -73,8 +81,24 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found or not authorized' });
     }
 
-    const updates = req.body;
-    Object.assign(task, updates);
+    const { title, description, deadline, priority, status, reminder } = req.body;
+
+    let reminderTime;
+    if (reminder === '1hour') {
+      reminderTime = new Date(new Date(deadline || task.deadline).getTime() - 60 * 60 * 1000);
+    } else if (reminder === '1day') {
+      reminderTime = new Date(new Date(deadline || task.deadline).getTime() - 24 * 60 * 60 * 1000);
+    } else if (reminder === '') {
+      reminderTime = null;
+    }
+
+    task.title = title?.trim() || task.title;
+    task.description = description?.trim() || task.description;
+    task.deadline = deadline || task.deadline;
+    task.priority = priority || task.priority;
+    task.status = status || task.status;
+    task.reminderTime = reminderTime !== undefined ? reminderTime : task.reminderTime;
+
     await task.save();
 
     res.status(200).json(task);
@@ -174,7 +198,6 @@ export const getAnswersFromPDF = async (req, res) => {
       return res.status(200).json({ questions: [], message: 'No text extracted from PDF' });
     }
 
-    // Step 1: Extract questions
     const questionPrompt = `You are an expert at extracting questions from text. Analyze the following PDF text and identify all questions. Questions may be:
 - Numbered (e.g., "1.", "1)").
 - Bulleted (e.g., "•", "-").
@@ -213,7 +236,6 @@ Format the output as a JSON array of strings, each string being a question. If n
       return res.status(200).json({ questions: [], message: 'No questions found in the PDF text' });
     }
 
-    // Step 2: Generate answers for each question
     const questionsWithAnswers = [];
     for (const question of extractedQuestions) {
       const answerPrompt = `Provide a concise and accurate answer to the following question. Return the answer as plain text:\n\n${question}`;

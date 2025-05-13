@@ -15,6 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: (token: string) => Promise<void>;
   logout: () => void;
   error: string | null;
 }
@@ -27,27 +28,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Configure axios defaults
   axios.defaults.baseURL = API_URL;
-  
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
-  // Check if user is authenticated on initial load
   useEffect(() => {
     const verifyToken = async () => {
       if (!token) {
         setIsLoading(false);
         return;
       }
-
       try {
         const res = await axios.get('/api/auth/me');
         setUser(res.data);
         setIsLoading(false);
       } catch (err) {
-        // Token is invalid or expired
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
@@ -55,11 +51,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     };
-
     verifyToken();
   }, [token]);
 
-  // Login function
   const login = async (email: string, password: string) => {
     setError(null);
     try {
@@ -74,7 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Signup function
   const signup = async (email: string, password: string, name: string) => {
     setError(null);
     try {
@@ -89,7 +82,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Logout function
+  const loginWithGoogle = async (token: string) => {
+    setError(null);
+    try {
+      localStorage.setItem('token', token);
+      setToken(token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const res = await axios.get('/api/auth/me');
+      setUser(res.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Google login failed');
+      throw new Error(err.response?.data?.message || 'Google login failed');
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -106,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         login,
         signup,
+        loginWithGoogle,
         logout,
         error,
       }}

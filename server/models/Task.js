@@ -17,6 +17,9 @@ const taskSchema = new mongoose.Schema(
       type: Date,
       required: [true, 'Please provide a deadline'],
     },
+    reminderTime: {
+      type: Date,
+    },
     status: {
       type: String,
       enum: ['pending', 'completed'],
@@ -33,16 +36,14 @@ const taskSchema = new mongoose.Schema(
       required: [true, 'Task must belong to a user'],
     },
     pdfUrl: {
-      type: String, // Store PDF URL or path
+      type: String,
       trim: true,
     },
   },
   { timestamps: true }
 );
 
-// Index for faster queries by user and status
 taskSchema.index({ user: 1, status: 1 });
-// Index for faster deadline sorting
 taskSchema.index({ deadline: 1 });
 
 const Task = mongoose.model('Task', taskSchema);

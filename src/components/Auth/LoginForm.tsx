@@ -66,9 +66,9 @@ const LoginForm: React.FC = () => {
                 message: 'Invalid email address',
               },
             })}
-            className={errors.email ? 'border-error-500' : ''}
+            className={`w-full p-2 rounded bg-dark-700 text-dark-100 ${errors.email ? 'border border-error-500' : ''}`}
           />
-          {errors.email && <p className="form-error">{errors.email.message}</p>}
+          {errors.email && <p className="form-error text-error-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
         
         <div className="form-control">
@@ -87,9 +87,9 @@ const LoginForm: React.FC = () => {
                 message: 'Password must be at least 6 characters',
               },
             })}
-            className={errors.password ? 'border-error-500' : ''}
+            className={`w-full p-2 rounded bg-dark-700 text-dark-100 ${errors.password ? 'border border-error-500' : ''}`}
           />
-          {errors.password && <p className="form-error">{errors.password.message}</p>}
+          {errors.password && <p className="form-error text-error-500 text-sm mt-1">{errors.password.message}</p>}
         </div>
         
         <Button

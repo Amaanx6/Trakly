@@ -1,109 +1,91 @@
-import React, { useState, FormEvent, ChangeEvent } from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { TaskInput } from '../../hooks/useTasks';
 import Button from '../Common/Button';
-import GlassContainer from '../Common/GlassContainer';
+import { TaskInput } from '../../hooks/useTasks';
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTask: (task: TaskInput) => Promise<void>;
+  onAddTask: (taskData: TaskInput) => Promise<void>;
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask }) => {
-  const [formData, setFormData] = useState<TaskInput>({
-    title: '',
-    description: '',
-    deadline: '',
-    priority: 'medium',
-    status: 'pending',
-  });
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [pdf, setPdf] = useState<File | null>(null);
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [reminder, setReminder] = useState<'1hour' | '1day' | ''>('');
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setPdf(file);
-      setError('');
-    } else {
-      setError('Please upload a valid PDF file');
-      setPdf(null);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await onAddTask({ ...formData, pdf: pdf || undefined });
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
+    await onAddTask({ title, description, deadline, priority, pdf: pdf || undefined, reminder });
+    setTitle('');
+    setDescription('');
+    setDeadline('');
+    setPriority('medium');
+    setPdf(null);
+    setReminder('');
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-dark-900 bg-opacity-50 flex items-center justify-center z-50">
-      <GlassContainer className="p-6 rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="glass-card p-6 rounded-lg max-w-lg w-full">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-dark-200">Add New Task</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-5 w-5 text-dark-400" />
-          </Button>
+          <h2 className="text-xl font-bold">Add New Task</h2>
+          <button onClick={onClose}>
+            <X className="h-6 w-6 text-dark-300" />
+          </button>
         </div>
-        <form onSubmit={handleSubmit} encType="multipart/form-data">
+        <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Title</label>
+            <label htmlFor="title" className="block text-dark-300 mb-2">
+              Title
+            </label>
             <input
               type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
               required
-              maxLength={100}
             />
           </div>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Description</label>
+            <label htmlFor="description" className="block text-dark-300 mb-2">
+              Description
+            </label>
             <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              maxLength={500}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Deadline</label>
+            <label htmlFor="deadline" className="block text-dark-300 mb-2">
+              Deadline
+            </label>
             <input
               type="datetime-local"
-              name="deadline"
-              value={formData.deadline}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              id="deadline"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Priority</label>
+            <label htmlFor="priority" className="block text-dark-300 mb-2">
+              Priority
+            </label>
             <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              id="priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -111,38 +93,40 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
             </select>
           </div>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Status</label>
+            <label htmlFor="reminder" className="block text-dark-300 mb-2">
+              Reminder
+            </label>
             <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              id="reminder"
+              value={reminder}
+              onChange={(e) => setReminder(e.target.value as '1hour' | '1day' | '')}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
             >
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
+              <option value="">None</option>
+              <option value="1hour">1 Hour Before</option>
+              <option value="1day">1 Day Before</option>
             </select>
           </div>
           <div className="mb-4">
-            <label className="block text-dark-300 mb-1">Upload Assignment PDF</label>
+            <label htmlFor="pdf" className="block text-dark-300 mb-2">
+              PDF (Optional)
+            </label>
             <input
-              id="pdf-input"
               type="file"
+              id="pdf"
               accept="application/pdf"
-              onChange={handleFileChange}
-              className="w-full p-2 rounded bg-dark-600 text-dark-200 border border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              onChange={(e) => setPdf(e.target.files?.[0] || null)}
+              className="w-full p-2 rounded bg-dark-700 text-dark-100"
             />
           </div>
-          {error && <p className="text-error-500 mb-4">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose} disabled={loading}>
+          <div className="flex justify-end gap-4">
+            <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={loading}>
-              Add Task
-            </Button>
+            <Button type="submit">Add Task</Button>
           </div>
         </form>
-      </GlassContainer>
+      </div>
     </div>
   );
 };

@@ -109,6 +109,15 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
+  const getGlowClass = (deadline: string) => {
+    const now = new Date();
+    const due = new Date(deadline);
+    const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (diffHours < 24) return 'red-glow';
+    if (diffHours < 72) return 'yellow-glow';
+    return 'green-glow';
+  };
+
   if (loading) {
     return (
       <GlassContainer className="p-6 rounded-lg">
@@ -121,6 +130,60 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <GlassContainer className="p-6 rounded-lg">
+      <style>
+        {`
+          .red-glow {
+            position: relative;
+          }
+          .red-glow::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+            animation: glow 2s ease-in-out infinite;
+            z-index: -1;
+            border-radius: 8px;
+          }
+          .yellow-glow {
+            position: relative;
+          }
+          .yellow-glow::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, transparent 70%);
+            animation: glow 2s ease-in-out infinite;
+            z-index: -1;
+            border-radius: 8px;
+          }
+          .green-glow {
+            position: relative;
+          }
+          .green-glow::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: radial-gradient(circle, rgba(0, 255, 0, 0.3) 0%, transparent 70%);
+            animation: glow 2s ease-in-out infinite;
+            z-index: -1;
+            border-radius: 8px;
+          }
+          @keyframes glow {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+          }
+        `}
+      </style>
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -205,14 +268,15 @@ const TaskList: React.FC<TaskListProps> = ({
         ) : (
           <div className="space-y-4">
             {sortedTasks.map((task) => (
-              <TaskItem 
-                key={task._id} 
-                task={task} 
-                onMarkComplete={onMarkComplete}
-                onDelete={onDelete}
-                onGetAnswers={handleGetAnswers}
-                initialAnswers={answersCache[task._id]}
-              />
+              <div key={task._id} className={getGlowClass(task.deadline)}>
+                <TaskItem 
+                  task={task} 
+                  onMarkComplete={onMarkComplete}
+                  onDelete={onDelete}
+                  onGetAnswers={handleGetAnswers}
+                  initialAnswers={answersCache[task._id]}
+                />
+              </div>
             ))}
           </div>
         )}
