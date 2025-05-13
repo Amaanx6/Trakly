@@ -15,6 +15,25 @@ interface TaskItemProps {
   initialAnswers?: { questions: QuestionAnswer[], message?: string };
 }
 
+const getUrgencyLevel = (deadline: string | Date): number => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  
+  if (isPast(deadlineDate)) {
+    return 3; // Very urgent (overdue)
+  }
+  
+  const hoursRemaining = Math.floor((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+  
+  if (hoursRemaining < 24) {
+    return 2; // Urgent (due within 24 hours)
+  } else if (hoursRemaining < 72) {
+    return 1; // Approaching (due within 3 days)
+  }
+  
+  return 0; // Not urgent
+};
+
 const TaskItem: React.FC<TaskItemProps> = ({ 
   task, 
   onMarkComplete, 
@@ -72,6 +91,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const deadlineDate = new Date(task.deadline);
   const isPastDeadline = isPast(deadlineDate) && task.status === 'pending';
+  const urgencyLevel = getUrgencyLevel(task.deadline);
 
   let deadlineText = format(deadlineDate, 'MMM d, yyyy');
   if (isToday(deadlineDate)) deadlineText = `Today, ${format(deadlineDate, 'h:mm a')}`;
@@ -86,15 +106,31 @@ const TaskItem: React.FC<TaskItemProps> = ({
     low: 'bg-success-900/50 text-success-300',
   };
 
+  const urgencyGlow = {
+    3: 'bg-error-500 animate-pulse',
+    2: 'bg-error-400',
+    1: 'bg-warning-400',
+    0: '',
+  };
+
   return (
     <GlassContainer
       className={`
-        rounded-lg transition-all duration-200
+        rounded-lg transition-all duration-200 relative overflow-hidden
         ${task.status === 'completed' ? 'opacity-70' : ''} 
         ${isPastDeadline ? 'border-error-700 border-opacity-50' : ''}
       `}
     >
-      <div className="p-4">
+      {/* Ambient glow for task item */}
+      {task.status === 'pending' && urgencyLevel > 0 && (
+        <div className={`
+          absolute inset-0 rounded-lg pointer-events-none
+          ${urgencyGlow[urgencyLevel as keyof typeof urgencyGlow]}
+          ${urgencyLevel === 3 ? 'opacity-15' : 'opacity-10'}
+        `}></div>
+      )}
+      
+      <div className="relative z-10 p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
