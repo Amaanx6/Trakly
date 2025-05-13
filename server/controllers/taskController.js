@@ -194,7 +194,7 @@ export const getAnswersFromPDF = async (req, res) => {
       }
     } catch (err) {
       console.error('Error parsing AI response:', err);
-      console.log('Raw AI response:', text.substring(0, 500)); // Limit for brevity
+      console.log('Raw AI response:', response.text().substring(0, 500)); // Fixed: Use response.text()
       questions = [];
     }
 

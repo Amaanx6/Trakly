@@ -19,12 +19,35 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('Created uploads directory:', uploadsDir);
 }
 
-app.use(express.json());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+// CORS configuration
+const corsOptions = {
+  origin: ['https://trakly.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
+// Handle preflight OPTIONS requests
+app.options('*', cors(corsOptions));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/tasks', taskRoutes);
+
+app.get('/', (req, res) => {
+  res.send('Assignment Tracker API is running');
+});
+
+// Error handling middleware to ensure CORS headers
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ message: 'Server error', error: err.message });
+});
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
@@ -32,13 +55,6 @@ mongoose.connect(process.env.MONGO_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', taskRoutes);
-
-app.get('/', (req, res) => {
-  res.send('Assignment Tracker API is running');
-});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
