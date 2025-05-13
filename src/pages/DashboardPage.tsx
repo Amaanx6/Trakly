@@ -1,10 +1,12 @@
+// In src/pages/DashboardPage.tsx
 import React, { useState } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { useTasks } from '../hooks/useTasks';
 import DashboardHeader from '../components/Dashboard/DashboardHeader';
 import StatsCard from '../components/Dashboard/StatsCard';
 import TaskList from '../components/Dashboard/TaskList';
-import AddTaskModal from '../components/Task/AddTaskModal';
+import TaskForm from '../components/Task/TaskForm';
+import SubjectForm from '../components/Dashboard/SubjectForm';
 import Button from '../components/Common/Button';
 
 const DashboardPage: React.FC = () => {
@@ -20,13 +22,10 @@ const DashboardPage: React.FC = () => {
     upcomingTasks
   } = useTasks();
 
-  // Use the same type signature that AddTaskModal is expecting
-  const handleAddTask: typeof addTask = async (taskData) => {
-    // If priority is undefined, set a default value
+  const handleAddTask = async (taskData: any) => {
     if (!taskData.priority) {
       taskData.priority = "medium";
     }
-    
     await addTask(taskData);
     setIsAddModalOpen(false);
   };
@@ -41,6 +40,10 @@ const DashboardPage: React.FC = () => {
 
   const handleRefresh = async () => {
     await fetchTasks();
+  };
+
+  const handleSubjectAdded = () => {
+    fetchTasks(); // Refresh to update subjects
   };
 
   return (
@@ -76,6 +79,7 @@ const DashboardPage: React.FC = () => {
         </Button>
       </div>
       
+      <SubjectForm onSubjectAdded={handleSubjectAdded} />
       <StatsCard tasks={tasks} />
       
       <TaskList 
@@ -87,7 +91,7 @@ const DashboardPage: React.FC = () => {
         refetchTasks={handleRefresh}
       />
       
-      <AddTaskModal 
+      <TaskForm 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddTask={handleAddTask}

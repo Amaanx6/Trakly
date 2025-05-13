@@ -1,5 +1,7 @@
+// In server/controllers/taskController.js
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
+import User from '../models/User.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
@@ -28,39 +30,65 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, deadline, priority, status, reminder } = req.body;
+    const { type, subjectCode, taskNumber, deadline, description, semester } = req.body;
     const userId = req.user?.id;
 
-    console.log('Parsed request body:', { title, description, deadline, priority, status, reminder });
+    console.log('Parsed request body:', { type, subjectCode, taskNumber, deadline, description, semester });
 
     if (!userId) {
       console.error('User ID missing in request');
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    if (!title?.trim() || !deadline) {
-      console.error('Missing required fields:', { title, deadline });
-      return res.status(400).json({ message: 'Title and deadline are required' });
+    if (!type || !subjectCode || !taskNumber || !deadline || !semester) {
+      console.error('Missing required fields:', { type, subjectCode, taskNumber, deadline, semester });
+      return res.status(400).json({ message: 'Type, subject code, task number, deadline, and semester are required' });
+    }
+
+    const user = await User.findById(userId);
+    const subject = user.subjects.find((sub) => sub.subjectCode === subjectCode);
+    if (!subject) {
+      console.error('Invalid subject:', subjectCode);
+      return res.status(400).json({ message: 'Invalid subject' });
+    }
+
+    const existingTasks = await Task.countDocuments({
+      user: userId,
+      type,
+      'subject.subjectCode': subjectCode,
+      semester,
+    });
+    if (existingTasks >= 5) {
+      console.error('Task limit exceeded:', { type, subjectCode, semester });
+      return res.status(400).json({ message: `Maximum 5 ${type}s per subject per semester` });
+    }
+
+    const usedNumbers = await Task.find({
+      user: userId,
+      type,
+      'subject.subjectCode': subjectCode,
+      semester,
+    }).select('taskNumber');
+    const availableNumbers = [1, 2, 3, 4, 5].filter((num) => !usedNumbers.some((t) => t.taskNumber === num));
+    const finalTaskNumber = parseInt(taskNumber);
+    if (!availableNumbers.includes(finalTaskNumber)) {
+      console.error('Invalid task number:', taskNumber);
+      return res.status(400).json({ message: 'Invalid or unavailable task number' });
     }
 
     const pdfUrl = req.file ? `/Uploads/${req.file.filename}` : null;
 
-    let reminderTime;
-    if (reminder === '1hour') {
-      reminderTime = new Date(new Date(deadline).getTime() - 60 * 60 * 1000);
-    } else if (reminder === '1day') {
-      reminderTime = new Date(new Date(deadline).getTime() - 24 * 60 * 60 * 1000);
-    }
-
     const task = await Task.create({
-      title: title.trim(),
-      description: description?.trim() || '',
-      deadline,
-      priority: priority || 'medium',
-      status: status || 'pending',
       user: userId,
+      type,
+      subject: { subjectCode, subjectName: subject.subjectName },
+      taskNumber: finalTaskNumber,
+      deadline,
+      description: description?.trim() || '',
       pdfUrl,
-      reminderTime,
+      semester,
+      status: 'pending',
+      priority: 'medium',
     });
 
     console.log('Task created:', task._id);
@@ -260,5 +288,31 @@ Format the output as a JSON array of strings, each string being a question. If n
     console.error('Error processing PDF:', err);
     console.error('Error stack:', err.stack);
     return res.status(500).json({ message: 'Server error while processing PDF', error: err.message });
+  }
+};
+
+export const getAvailableTaskNumbers = async (req, res) => {
+  try {
+    const { type, subjectCode, semester } = req.query;
+    const userId = req.user.id;
+
+    if (!type || !subjectCode || !semester) {
+      console.error('Missing query parameters:', { type, subjectCode, semester });
+      return res.status(400).json({ message: 'Type, subjectCode, and semester are required' });
+    }
+
+    const usedNumbers = await Task.find({
+      user: userId,
+      type,
+      'subject.subjectCode': subjectCode,
+      semester,
+    }).select('taskNumber');
+
+    const availableNumbers = [1, 2, 3, 4, 5].filter((num) => !usedNumbers.some((t) => t.taskNumber === num));
+    console.log('Available task numbers:', availableNumbers);
+    res.status(200).json(availableNumbers);
+  } catch (err) {
+    console.error('Error fetching available task numbers:', err);
+    res.status(500).json({ message: 'Server error while fetching available task numbers', error: err.message });
   }
 };

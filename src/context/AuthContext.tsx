@@ -7,6 +7,10 @@ interface User {
   id: string;
   email: string;
   name?: string;
+  college?: string;
+  year?: string;
+  branch?: string;
+  subjects?: { subjectCode: string; subjectName: string }[];
 }
 
 interface AuthResponse {
@@ -20,7 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, college: string, year: string, branch: string) => Promise<void>;
   loginWithGoogle: (token: string) => Promise<void>;
   logout: () => void;
   error: string | null;
@@ -45,7 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check URL query parameters for Google OAuth token
         const searchParams = new URLSearchParams(location.search);
         const googleToken = searchParams.get('token');
         const newUser = searchParams.get('newUser') === 'true';
@@ -55,7 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (googleToken) {
           try {
             await loginWithGoogle(googleToken);
-            // Clear query parameters and navigate to dashboard
             navigate('/dashboard', { replace: true });
             if (newUser) {
               console.log('AuthContext: New user signed up');
@@ -65,12 +67,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             navigate('/login', { replace: true });
           }
         } else if (token) {
-          // Verify existing token
           try {
             const res = await axios.get<AuthResponse>('/api/auth/me');
             setUser(res.data.user);
             setIsAuthenticated(true);
-            console.log('AuthContext: Token verified:', res.data.user);
+            console.log('AuthContext: Token verified:', res.data);
           } catch (err) {
             console.error('AuthContext: Token verification failed:', err);
             localStorage.removeItem('token');
@@ -116,11 +117,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = async (email: string, password: string, name: string, college: string, year: string, branch: string) => {
     setError(null);
     setIsLoading(true);
     try {
-      const res = await axios.post<AuthResponse>('/api/auth/signup', { email, password, name });
+      const res = await axios.post<AuthResponse>('/api/auth/signup', { email, password, name, college, year, branch });
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await axios.get<AuthResponse>('/api/auth/me');
       setUser(res.data.user);
       setIsAuthenticated(true);
-      console.log('AuthContext: Google login successful:', res.data.user);
+      console.log('AuthContext: Google login successful:', res.data);
     } catch (err: any) {
       localStorage.removeItem('token');
       setToken(null);

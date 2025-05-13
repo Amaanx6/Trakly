@@ -1,3 +1,4 @@
+// In src/components/Dashboard/TaskList.tsx
 import React, { useState, useMemo } from 'react';
 import { Calendar, CheckSquare, Filter, RefreshCw } from 'lucide-react';
 import { API_URL } from '../../config/constants';
@@ -6,6 +7,7 @@ import TaskItem from './TaskItem';
 import GlassContainer from '../Common/GlassContainer';
 import Loader from '../Common/Loader';
 import Button from '../Common/Button';
+import { useAuth } from '../../hooks/useAuth';
 
 interface TaskListProps {
   tasks: Task[];
@@ -17,28 +19,35 @@ interface TaskListProps {
 }
 
 type FilterType = 'all' | 'pending' | 'completed';
-type SortType = 'deadline' | 'priority' | 'title' | 'createdAt';
+type SortType = 'deadline' | 'priority' | 'createdAt';
 
-const TaskList: React.FC<TaskListProps> = ({ 
-  tasks, 
-  loading, 
+const TaskList: React.FC<TaskListProps> = ({
+  tasks,
+  loading,
   error,
-  onMarkComplete, 
+  onMarkComplete,
   onDelete,
-  refetchTasks
+  refetchTasks,
 }) => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortType>('deadline');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [answersCache, setAnswersCache] = useState<Record<string, { questions: QuestionAnswer[], message?: string }>>({});
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [answersCache, setAnswersCache] = useState<
+    Record<string, { questions: QuestionAnswer[]; message?: string }>
+  >({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user } = useAuth();
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       if (filter === 'all') return true;
       return task.status === filter;
+    }).filter((task) => {
+      if (!selectedSubject) return true;
+      return task.subject.subjectCode === selectedSubject;
     });
-  }, [tasks, filter]);
+  }, [tasks, filter, selectedSubject]);
 
   const sortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -52,9 +61,6 @@ const TaskList: React.FC<TaskListProps> = ({
           const priorityOrder = { high: 1, medium: 2, low: 3 };
           comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
           break;
-        case 'title':
-          comparison = a.title.localeCompare(b.title);
-          break;
         case 'createdAt':
           comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           break;
@@ -63,6 +69,13 @@ const TaskList: React.FC<TaskListProps> = ({
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [filteredTasks, sort, sortDirection]);
+
+  const getProgress = (type: string, subjectCode: string) => {
+    const filteredTasks = tasks.filter(
+      (task) => task.type === type && task.subject.subjectCode === subjectCode
+    );
+    return `${filteredTasks.length}/5`;
+  };
 
   const handleGetAnswers = async (taskId: string) => {
     if (answersCache[taskId]) {
@@ -80,21 +93,21 @@ const TaskList: React.FC<TaskListProps> = ({
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch answers');
       }
-      
+
       const data = await response.json();
       const result = { questions: data.questions || [], message: data.message };
-      setAnswersCache(prev => ({ ...prev, [taskId]: result }));
+      setAnswersCache((prev) => ({ ...prev, [taskId]: result }));
       return result;
     } catch (err: any) {
       console.error('Error fetching answers:', err);
       const errorResult = { questions: [], message: err.message || 'Failed to fetch answers' };
-      setAnswersCache(prev => ({ ...prev, [taskId]: errorResult }));
+      setAnswersCache((prev) => ({ ...prev, [taskId]: errorResult }));
       throw err;
     }
   };
 
   const toggleSortDirection = () => {
-    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
   const handleRefresh = async () => {
@@ -180,14 +193,14 @@ const TaskList: React.FC<TaskListProps> = ({
           100% { opacity: 0.5; }
         }
       `}</style>
-      
+
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <CheckSquare className="h-5 w-5 text-primary-500" />
             <span>Your Tasks</span>
           </h2>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             {refetchTasks && (
               <Button
@@ -202,7 +215,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
             <div className="glass px-3 py-1.5 rounded-md flex items-center gap-2 text-sm">
               <Filter className="h-4 w-4 text-dark-400" />
-              <select 
+              <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as FilterType)}
                 className="bg-transparent border-none focus:ring-0 text-dark-300 p-0 pr-6"
@@ -212,20 +225,19 @@ const TaskList: React.FC<TaskListProps> = ({
                 <option value="completed">Completed</option>
               </select>
             </div>
-            
+
             <div className="glass px-3 py-1.5 rounded-md flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-dark-400" />
-              <select 
+              <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortType)}
                 className="bg-transparent border-none focus:ring-0 text-dark-300 p-0 pr-6"
               >
                 <option value="deadline">By Deadline</option>
                 <option value="priority">By Priority</option>
-                <option value="title">By Title</option>
                 <option value="createdAt">By Created Date</option>
               </select>
-              <button 
+              <button
                 onClick={toggleSortDirection}
                 className="text-dark-400 hover:text-dark-300"
                 aria-label={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
@@ -236,11 +248,43 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         </div>
 
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Button
+            variant={selectedSubject === '' ? 'primary' : 'outline'}
+            onClick={() => setSelectedSubject('')}
+            size="sm"
+          >
+            All Subjects
+          </Button>
+          {user?.subjects?.map((sub) => (
+            <Button
+              key={sub.subjectCode}
+              variant={selectedSubject === sub.subjectCode ? 'primary' : 'outline'}
+              onClick={() => setSelectedSubject(sub.subjectCode)}
+              size="sm"
+            >
+              {sub.subjectCode}
+            </Button>
+          ))}
+        </div>
+
+        {user?.subjects?.map((sub) => (
+          <div key={sub.subjectCode} className="mb-4">
+            <h3 className="text-lg font-medium text-white">{sub.subjectName}</h3>
+            <p className="text-dark-300 text-sm">
+              Assignments: {getProgress('Assignment', sub.subjectCode)}
+            </p>
+            <p className="text-dark-300 text-sm">
+              Surprise Tests: {getProgress('Surprise Test', sub.subjectCode)}
+            </p>
+          </div>
+        ))}
+
         {error && (
           <div className="bg-error-500/10 text-error-500 p-3 rounded-lg flex items-center justify-between">
             <span>{error}</span>
             {refetchTasks && (
-              <button 
+              <button
                 onClick={handleRefresh}
                 className="text-error-600 hover:underline text-sm"
               >
@@ -249,25 +293,25 @@ const TaskList: React.FC<TaskListProps> = ({
             )}
           </div>
         )}
-        
+
         {sortedTasks.length === 0 ? (
           <div className="text-center py-12 text-dark-400">
             <CheckSquare className="h-12 w-12 mx-auto mb-4 text-dark-600 opacity-50" />
             <p className="text-lg font-medium mb-2">No tasks found</p>
             <p className="text-sm">
-              {filter === 'all' 
-                ? 'Start by adding your first task!' 
-                : filter === 'pending' 
-                  ? 'No pending tasks. Great work!' 
-                  : 'No completed tasks yet.'}
+              {filter === 'all'
+                ? 'Start by adding your first task!'
+                : filter === 'pending'
+                ? 'No pending tasks. Great work!'
+                : 'No completed tasks yet.'}
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {sortedTasks.map((task) => (
               <div key={task._id} className={getGlowClass(task.deadline)}>
-                <TaskItem 
-                  task={task} 
+                <TaskItem
+                  task={task}
                   onMarkComplete={onMarkComplete}
                   onDelete={onDelete}
                   onGetAnswers={handleGetAnswers}

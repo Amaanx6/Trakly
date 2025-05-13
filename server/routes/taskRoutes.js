@@ -1,10 +1,12 @@
+// In server/routes/taskRoutes.js
 import express from 'express';
 import { 
   getTasks, 
   createTask, 
   updateTask, 
   deleteTask,
-  getAnswersFromPDF 
+  getAnswersFromPDF,
+  getAvailableTaskNumbers 
 } from '../controllers/taskController.js';
 import { protect } from '../middleware/auth.js';
 import { taskValidator } from '../middleware/validators.js';
@@ -23,5 +25,6 @@ router.route('/:id')
   .delete(deleteTask);
 
 router.get('/:taskId/answers', getAnswersFromPDF);
+router.get('/available-task-numbers', getAvailableTaskNumbers);
 
 export default router;

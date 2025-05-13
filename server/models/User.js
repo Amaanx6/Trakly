@@ -29,6 +29,33 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    college: {
+      type: String,
+      required: [true, 'Please provide a college'],
+      trim: true,
+    },
+    year: {
+      type: String,
+      required: [true, 'Please provide a year'],
+      enum: ['1st', '2nd', '3rd', '4th'],
+    },
+    branch: {
+      type: String,
+      required: [true, 'Please provide a branch'],
+      enum: ['IT', 'CSE', 'CSE AIML', 'CSD', 'EEE', 'ECE', 'ME'],
+    },
+    subjects: [{
+      subjectCode: {
+        type: String,
+        required: [true, 'Subject code is required'],
+        trim: true,
+      },
+      subjectName: {
+        type: String,
+        required: [true, 'Subject name is required'],
+        trim: true,
+      },
+    }],
   },
   { timestamps: true }
 );

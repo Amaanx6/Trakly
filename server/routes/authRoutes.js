@@ -1,3 +1,4 @@
+// In server/routes/authRoutes.js
 import express from 'express';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
@@ -7,15 +8,25 @@ const router = express.Router();
 
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, college, year, branch } = req.body;
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    user = new User({ name, email, password });
+    user = new User({ name, email, password, college, year, branch });
     await user.save();
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.status(201).json({ token, user: { id: user._id, email: user.email, name: user.name } });
+    res.status(201).json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name, 
+        college: user.college, 
+        year: user.year, 
+        branch: user.branch 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -29,7 +40,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name, 
+        college: user.college, 
+        year: user.year, 
+        branch: user.branch 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -46,7 +67,15 @@ router.get('/me', async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
-    res.json({ id: user._id, email: user.email, name: user.name });
+    res.json({ 
+      id: user._id, 
+      email: user.email, 
+      name: user.name, 
+      college: user.college, 
+      year: user.year, 
+      branch: user.branch,
+      subjects: user.subjects 
+    });
   } catch (err) {
     res.status(401).json({ message: 'Invalid token', error: err.message });
   }

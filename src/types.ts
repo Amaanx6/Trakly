@@ -1,22 +1,16 @@
+// In src/types.ts
 export interface Task {
   _id: string;
-  title: string;
-  description?: string;
+  type: 'Assignment' | 'Surprise Test';
+  subject: { subjectCode: string; subjectName: string };
+  taskNumber: number;
   deadline: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'completed';
-  user?: string;
+  description?: string;
   pdfUrl?: string;
-  createdAt?: string;
-}
-
-export interface TaskInput {
-  title: string;
-  description?: string;
-  deadline: string;
+  semester: string;
+  status: 'pending' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  status?: 'pending' | 'completed';
-  pdf?: File;
+  createdAt: string;
 }
 
 export interface QuestionAnswer {
