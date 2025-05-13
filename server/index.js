@@ -8,15 +8,16 @@ import taskRoutes from './routes/taskRoutes.js';
 import path from 'path';
 import fs from 'fs';
 import { scheduleReminders } from './utils/scheduler.js';
+import './middleware/passport.js'; // Import Passport configuration
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const uploadsDir = path.join(process.cwd(), 'Uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+const UploadsDir = path.join(process.cwd(), 'Uploads');
+if (!fs.existsSync(UploadsDir)) {
+  fs.mkdirSync(UploadsDir, { recursive: true });
 }
 
 const corsOptions = {
@@ -30,7 +31,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadsDir));
+app.use('/Uploads', express.static(UploadsDir));
 app.use(passport.initialize());
 
 app.use('/api/auth', authRoutes);
@@ -45,7 +46,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server error', error: err.message });
 });
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => {
     console.log('MongoDB connected');
     scheduleReminders();
@@ -55,5 +59,3 @@ mongoose.connect(process.env.MONGO_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
-  

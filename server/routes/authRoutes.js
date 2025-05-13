@@ -62,9 +62,13 @@ router.get('/google', (req, res, next) => {
 
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login` }),
+  passport.authenticate('google', { 
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL}/login`
+  }),
   (req, res) => {
-    const { user, token } = req.user;
+    console.log('Google callback req.user:', req.user);
+    const { user, token } = req.user; // Matches passport.js done(null, { user, token })
     const action = req.query.state || 'login';
     const redirectUrl = action === 'signup' 
       ? `${process.env.FRONTEND_URL}/dashboard?token=${token}&newUser=true`
