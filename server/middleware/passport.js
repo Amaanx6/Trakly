@@ -16,9 +16,11 @@ passport.use(
         if (!user) {
           user = await User.findOne({ email: profile.emails[0].value });
           if (user) {
+            // Existing user: link Google account
             user.googleId = profile.id;
             await user.save();
           } else {
+            // New user: create account (signup)
             user = new User({
               googleId: profile.id,
               email: profile.emails[0].value,

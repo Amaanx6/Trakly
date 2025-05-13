@@ -43,7 +43,7 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: 'Title and deadline are required' });
     }
 
-    const pdfUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    const pdfUrl = req.file ? `/Uploads/${req.file.filename}` : null;
 
     let reminderTime;
     if (reminder === '1hour') {

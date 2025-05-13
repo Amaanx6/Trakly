@@ -41,25 +41,35 @@ router.get('/me', async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
     res.json({ id: user._id, email: user.email, name: user.name });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Invalid token', error: err.message });
   }
 });
 
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', (req, res, next) => {
+  const { action } = req.query; // 'login' or 'signup'
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    state: action || 'login' // Pass action as state
+  })(req, res, next);
+});
 
 router.get(
   '/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login` }),
   (req, res) => {
     const { user, token } = req.user;
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    const action = req.query.state || 'login';
+    const redirectUrl = action === 'signup' 
+      ? `${process.env.FRONTEND_URL}/dashboard?token=${token}&newUser=true`
+      : `${process.env.FRONTEND_URL}/dashboard?token=${token}`;
+    res.redirect(redirectUrl);
   }
 );
 
