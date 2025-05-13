@@ -137,11 +137,14 @@ export const getAnswersFromPDF = async (req, res) => {
     console.log('Resolved PDF path:', pdfPath);
 
     // Check if PDF file exists
+    let pdfBuffer;
     try {
       await fs.access(pdfPath, fs.constants.R_OK);
       console.log('PDF file exists and is readable:', pdfPath);
       const stats = await fs.stat(pdfPath);
       console.log('PDF file stats:', { size: stats.size, isFile: stats.isFile() });
+      pdfBuffer = await fs.readFile(pdfPath);
+      console.log('PDF buffer read, size:', pdfBuffer.length);
     } catch (err) {
       console.error('PDF file not found or inaccessible:', pdfPath, err);
       return res.status(500).json({ message: 'PDF file not found or inaccessible', error: err.message });
@@ -149,13 +152,12 @@ export const getAnswersFromPDF = async (req, res) => {
 
     let dataBuffer;
     try {
-      console.log('Parsing PDF:', pdfPath);
-      // Read file to buffer to ensure pdf-parse can process it
-      const pdfBuffer = await fs.readFile(pdfPath);
+      console.log('Parsing PDF buffer, size:', pdfBuffer.length);
       dataBuffer = await pdfParse(pdfBuffer);
       console.log('PDF parsed successfully, text length:', dataBuffer.text.length);
     } catch (err) {
       console.error('Error parsing PDF:', err);
+      console.error('Error stack:', err.stack);
       return res.status(500).json({ message: 'Failed to parse PDF', error: err.message });
     }
 
@@ -170,6 +172,7 @@ export const getAnswersFromPDF = async (req, res) => {
       result = await model.generateContent(prompt);
     } catch (err) {
       console.error('Error calling Google Generative AI:', err);
+      console.error('Error stack:', err.stack);
       return res.status(500).json({ message: 'Failed to process PDF content with AI', error: err.message });
     }
 
@@ -185,7 +188,7 @@ export const getAnswersFromPDF = async (req, res) => {
       }
     } catch (err) {
       console.error('Error parsing AI response:', err);
-      console.log('Raw AI response:', response.text());
+      console.log('Raw AI response:', response.text().substring(0, 500)); // Limit for brevity
       questions = [];
     }
 
@@ -193,6 +196,7 @@ export const getAnswersFromPDF = async (req, res) => {
     res.status(200).json({ questions });
   } catch (err) {
     console.error('Error processing PDF:', err);
-    res.status(500).json({ message: 'Server error while processing PDF', error: err.message });
+    console.error('Error stack:', err.stack);
+    return res.status(500).json({ message: 'Server error while processing PDF', error: err.message });
   }
 };
