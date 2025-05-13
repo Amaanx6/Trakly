@@ -1,43 +1,82 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Button from '../Common/Button';
 import GlassContainer from '../Common/GlassContainer';
+import { useAuth } from '../../hooks/useAuth';
+import Loader from '../Common/Loader'; // Ensure this matches App.tsx styling
 
 const CTASection: React.FC = () => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
+  };
+
+  if (isLoading) {
+    return (
+      <section className="py-16 px-4">
+        <div className="container-lg">
+          <GlassContainer darker className="rounded-xl overflow-hidden">
+            <div className="relative p-8 md:p-12 flex justify-center items-center">
+              <Loader />
+            </div>
+          </GlassContainer>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-16 px-4">
       <div className="container-lg">
         <GlassContainer darker className="rounded-xl overflow-hidden">
           <div className="relative p-8 md:p-12">
-            {/* Background gradient effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary-900/30 to-secondary-900/30 -z-10"></div>
-            
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Ready to take control of your academic life?
+                {isAuthenticated
+                  ? `Welcome back${user?.name ? `, ${user.name}` : ''}!`
+                  : 'Ready to take control of your academic life?'}
               </h2>
               <p className="text-dark-300 text-lg mb-8">
-                Join thousands of students who have improved their productivity and reduced stress by using our assignment tracking system.
+                {isAuthenticated
+                  ? 'Continue managing your assignments and stay on top of your tasks.'
+                  : 'Join thousands of students who have improved their productivity and reduced stress by using our assignment tracking system.'}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link to="/signup">
-                  <Button 
-                    size="lg" 
+                {isAuthenticated ? (
+                  <Button
+                    size="lg"
                     rightIcon={<ArrowRight className="h-5 w-5" />}
+                    onClick={handleDashboardClick}
                   >
-                    Get Started for Free
+                    Go to Dashboard
                   </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="ghost" size="lg">
-                    Log In
-                  </Button>
-                </Link>
+                ) : (
+                  <>
+                    <Link to="/signup">
+                      <Button
+                        size="lg"
+                        rightIcon={<ArrowRight className="h-5 w-5" />}
+                      >
+                        Get Started for Free
+                      </Button>
+                    </Link>
+                    <Link to="/login">
+                      <Button variant="ghost" size="lg">
+                        Log In
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
-              <p className="mt-6 text-dark-400 text-sm">
-                No credit card required. Set up in minutes.
-              </p>
+              {!isAuthenticated && (
+                <p className="mt-6 text-dark-400 text-sm">
+                  No credit card required. Set up in minutes.
+                </p>
+              )}
             </div>
           </div>
         </GlassContainer>
