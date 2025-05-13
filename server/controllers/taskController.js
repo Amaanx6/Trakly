@@ -174,47 +174,65 @@ export const getAnswersFromPDF = async (req, res) => {
       return res.status(200).json({ questions: [], message: 'No text extracted from PDF' });
     }
 
-    const prompt = `You are an expert at extracting structured data from text. Analyze the following PDF text and identify question-answer pairs. Questions may be:
+    // Step 1: Extract questions
+    const questionPrompt = `You are an expert at extracting questions from text. Analyze the following PDF text and identify all questions. Questions may be:
 - Numbered (e.g., "1.", "1)").
 - Bulleted (e.g., "•", "-").
 - Plain text ending with "?" or implying a query.
 - In headings, paragraphs, or lists.
-Answers may follow immediately, be in a separate paragraph, or appear after labels like "Answer:", "Ans:", or "A:". They may also be implied in the text following a question without explicit labels. Format the output as a JSON array of objects, each with "question" and "answer" fields. If no clear question-answer pairs are found, return an empty array. Handle cases where:
-- Questions are standalone with answers in a separate section.
-- Answers are in tables or lists.
-- Text is unstructured but implies questions and answers.
-Example output: [{"question": "What is the capital of France?", "answer": "Paris"}]:\n\n${pdfText}`;
+Format the output as a JSON array of strings, each string being a question. If no questions are found, return an empty array. Example output: ["What is the capital of France?", "What is 2 + 2?"]:\n\n${pdfText}`;
 
-    console.log('Sending prompt to Google Generative AI, prompt length:', prompt.length);
-    let result;
+    console.log('Sending question extraction prompt to Google Generative AI, prompt length:', questionPrompt.length);
+    let questionResult;
     try {
-      result = await model.generateContent(prompt);
+      questionResult = await model.generateContent(questionPrompt);
     } catch (err) {
-      console.error('Error calling Google Generative AI:', err);
+      console.error('Error calling Google Generative AI for question extraction:', err);
       console.error('Error stack:', err.stack);
-      return res.status(500).json({ message: 'Failed to process PDF content with AI', error: err.message });
+      return res.status(500).json({ message: 'Failed to extract questions with AI', error: err.message });
     }
 
-    const response = await result.response;
-    let questions;
-
+    let extractedQuestions = [];
     try {
-      const text = response.text();
-      console.log('AI response received, full text:', text);
-      questions = JSON.parse(text);
-      if (!Array.isArray(questions)) {
-        throw new Error('AI response is not an array');
+      const questionText = (await questionResult.response.text()).replace(/```json\n|\n```/g, '').trim();
+      console.log('Question extraction AI response:', questionText);
+      extractedQuestions = JSON.parse(questionText);
+      if (!Array.isArray(extractedQuestions)) {
+        throw new Error('Question extraction AI response is not an array');
       }
     } catch (err) {
-      console.error('Error parsing AI response:', err);
-      console.log('Raw AI response:', response.text().substring(0, 1000));
-      questions = [];
+      console.error('Error parsing question extraction AI response:', err);
+      console.log('Raw question AI response:', (await questionResult.response.text()).substring(0, 1000));
+      extractedQuestions = [];
     }
 
-    console.log('Returning questions:', questions);
+    console.log('Extracted questions:', extractedQuestions);
+
+    if (!extractedQuestions.length) {
+      console.log('No questions found in PDF text');
+      return res.status(200).json({ questions: [], message: 'No questions found in the PDF text' });
+    }
+
+    // Step 2: Generate answers for each question
+    const questionsWithAnswers = [];
+    for (const question of extractedQuestions) {
+      const answerPrompt = `Provide a concise and accurate answer to the following question. Return the answer as plain text:\n\n${question}`;
+      console.log('Sending answer generation prompt for question:', question);
+      try {
+        const answerResult = await model.generateContent(answerPrompt);
+        const answerText = (await answerResult.response.text()).trim();
+        console.log('Answer generated for question:', { question, answer: answerText });
+        questionsWithAnswers.push({ question, answer: answerText });
+      } catch (err) {
+        console.error('Error generating answer for question:', question, err);
+        questionsWithAnswers.push({ question, answer: 'Failed to generate answer' });
+      }
+    }
+
+    console.log('Returning questions with answers:', questionsWithAnswers);
     res.status(200).json({ 
-      questions, 
-      message: questions.length ? undefined : pdfText.trim() ? 'No question-answer pairs found in the PDF text' : 'No text extracted from PDF' 
+      questions: questionsWithAnswers, 
+      message: questionsWithAnswers.length ? undefined : 'No questions found in the PDF text' 
     });
   } catch (err) {
     console.error('Error processing PDF:', err);
