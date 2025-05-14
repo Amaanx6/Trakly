@@ -14,6 +14,12 @@ const Navbar: React.FC = () => {
     navigate('/');
   };
 
+  // Get display name from user object
+  const getDisplayName = () => {
+    if (!user) return 'User';
+    return user.name || (user.email ? user.email.split('@')[0] : 'User');
+  };
+
   return (
     <nav className="glass-dark sticky top-0 z-50 px-4 py-3">
       <div className="container-xl flex items-center justify-between">
@@ -45,7 +51,7 @@ const Navbar: React.FC = () => {
               </Link>
               <div className="border-l border-dark-700 h-6 mx-2"></div>
               <div className="text-dark-300">
-                Hi, {user?.name || user?.email}
+                Hi, {getDisplayName()}
               </div>
               <Button 
                 variant="ghost" 
@@ -78,7 +84,7 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <div className="text-dark-300 mb-2">
-                  Hi, {user?.name || user?.email}
+                  Hi, {getDisplayName()}
                 </div>
                 <Link 
                   to="/dashboard" 
