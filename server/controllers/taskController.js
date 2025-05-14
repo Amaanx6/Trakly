@@ -78,12 +78,15 @@ export const createTask = async (req, res) => {
     let pdfUrl = null;
     if (req.file) {
       try {
-        const uploadPath = path.join('/tmp', 'Uploads', req.file.filename);
-        await fs.access(uploadPath, fs.constants.R_OK); // Verify file exists
+        console.log('File saved by multer:', {
+          filename: req.file.filename,
+          path: req.file.path,
+          destination: req.file.destination,
+        });
         pdfUrl = `/Uploads/${req.file.filename}`;
       } catch (err) {
-        console.error('File upload error:', err);
-        return res.status(400).json({ message: 'File upload error', error: err.message });
+        console.error('File processing error:', err);
+        return res.status(400).json({ message: 'File processing error', error: err.message });
       }
     }
 

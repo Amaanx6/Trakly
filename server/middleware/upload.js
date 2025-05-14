@@ -1,14 +1,14 @@
 import multer from 'multer';
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 
 // Define the uploads directory in /tmp for Render's ephemeral file system
-const uploadDir = path.join('/tmp', 'uploads');
+const uploadDir = path.join('/tmp', 'Uploads');
 
 // Ensure the uploads directory exists before saving files
-const ensureUploadDir = async () => {
+const ensureUploadDir = () => {
   try {
-    await fs.mkdir(uploadDir, { recursive: true });
+    fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Uploads directory created or already exists:', uploadDir);
   } catch (err) {
     console.error('Error creating uploads directory:', err);
@@ -18,9 +18,9 @@ const ensureUploadDir = async () => {
 
 // Multer storage configuration
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
+  destination: (req, file, cb) => {
     try {
-      await ensureUploadDir();
+      ensureUploadDir();
       cb(null, uploadDir);
     } catch (err) {
       cb(err, null);
@@ -29,7 +29,9 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
+    const filename = `${uniqueSuffix}-${file.originalname}`;
+    console.log('Saving file:', { filename, destination: uploadDir });
+    cb(null, filename);
   },
 });
 
