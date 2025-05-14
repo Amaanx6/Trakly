@@ -10,7 +10,6 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Define interfaces for the API response structure
 interface Subject {
   subjectCode: string;
   subjectName: string;
@@ -21,7 +20,6 @@ interface APIResponse {
   subjects: Subject[];
 }
 
-// Colors for subject cards
 const SUBJECT_COLORS = [
   'from-blue-500 to-indigo-600',
   'from-purple-500 to-pink-600',
@@ -32,13 +30,11 @@ const SUBJECT_COLORS = [
 ];
 
 export const AllSubjects = () => {
-  // Store the subjects array
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Helper function to get a consistent color based on subject ID
   const getSubjectColor = (id: string) => {
     const index = id.charCodeAt(0) % SUBJECT_COLORS.length;
     return SUBJECT_COLORS[index];
@@ -52,7 +48,6 @@ export const AllSubjects = () => {
       const userEmail = localStorage.getItem("email");
       const response = await axios.get<APIResponse>(`https://trakly.onrender.com/api/get/subjects?email=${userEmail}`);
       
-      // Access the subjects array from the response
       setSubjects(response.data.subjects);
     } catch (error) {
       console.error("Error fetching subjects:", error);
@@ -62,37 +57,30 @@ export const AllSubjects = () => {
     }
   }
 
-  // Automatically fetch subjects on component mount
   useEffect(() => {
     fetchSubjects();
-    
-    // Set mounted state for animation
-    setTimeout(() => {
-      setMounted(true);
-    }, 100);
+    setTimeout(() => setMounted(true), 100);
   }, []);
 
-  // Loading state component (inline)
   const LoadingState = () => (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 flex flex-col items-center justify-center space-y-4 transition-all duration-500 ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
+    <div className={`bg-slate-800 rounded-xl shadow-md p-8 flex flex-col items-center justify-center space-y-4 transition-all duration-500 ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
       <div className="animate-pulse flex flex-col items-center">
-        <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mb-4" />
-        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">Loading your subjects...</h3>
-        <p className="text-slate-500 dark:text-slate-400 text-center max-w-md">
+        <Loader2 className="h-10 w-10 text-indigo-400 animate-spin mb-4" />
+        <h3 className="text-lg font-medium text-slate-300 mb-2">Loading your subjects...</h3>
+        <p className="text-slate-400 text-center max-w-md">
           We're retrieving your academic information. This should only take a moment.
         </p>
       </div>
     </div>
   );
 
-  // Empty state component (inline)
   const EmptyState = () => (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 flex flex-col items-center justify-center space-y-4 text-center transition-all duration-500 ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
-      <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-full p-4 mb-2">
-        <Book className="h-10 w-10 text-indigo-500 dark:text-indigo-400" />
+    <div className={`bg-slate-800 rounded-xl shadow-md p-8 flex flex-col items-center justify-center space-y-4 text-center transition-all duration-500 ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
+      <div className="bg-indigo-900/30 rounded-full p-4 mb-2">
+        <Book className="h-10 w-10 text-indigo-400" />
       </div>
-      <h3 className="text-xl font-semibold text-slate-800 dark:text-white">No subjects found</h3>
-      <p className="text-slate-500 dark:text-slate-400 max-w-md mb-2">
+      <h3 className="text-xl font-semibold text-white">No subjects found</h3>
+      <p className="text-slate-400 max-w-md mb-2">
         You don't have any subjects yet. Once you add subjects, they will appear here.
       </p>
       <button
@@ -105,29 +93,31 @@ export const AllSubjects = () => {
     </div>
   );
   
-  // Subject card component (inline)
   const SubjectCard = ({ subject }: { subject: Subject }) => {
     return (
-      <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group animate-fadeIn ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`} style={{ animationDelay: `${subjects.findIndex(s => s._id === subject._id) * 75}ms` }}>
+      <div 
+        className={`bg-slate-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group animate-fadeIn ${mounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`} 
+        style={{ animationDelay: `${subjects.findIndex(s => s._id === subject._id) * 75}ms` }}
+      >
         <div className={`h-2 bg-gradient-to-r ${getSubjectColor(subject._id)}`} />
         <div className="p-6">
           <div className="flex justify-between items-start mb-3">
-            <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-full p-2">
-              <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="bg-indigo-900/30 rounded-full p-2">
+              <BookOpen className="h-5 w-5 text-indigo-400" />
             </div>
-            <div className="flex items-center px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md">
-              <Code className="h-3 w-3 mr-1 text-slate-500 dark:text-slate-400" />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{subject.subjectCode}</span>
+            <div className="flex items-center px-2 py-1 bg-slate-700 rounded-md">
+              <Code className="h-3 w-3 mr-1 text-slate-400" />
+              <span className="text-xs font-medium text-slate-300">{subject.subjectCode}</span>
             </div>
           </div>
           
-          <h3 className="font-semibold text-lg mb-1 text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
+          <h3 className="font-semibold text-lg mb-1 text-white group-hover:text-indigo-400 transition-colors duration-200">
             {subject.subjectName}
           </h3>
           
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Subject ID: {subject._id.substring(0, 8)}...</span>
-            <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors duration-200">
+          <div className="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
+            <span className="text-xs text-slate-400">Subject ID: {subject._id.substring(0, 8)}...</span>
+            <button className="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors duration-200">
               View Details
             </button>
           </div>
@@ -136,7 +126,6 @@ export const AllSubjects = () => {
     );
   };
   
-  // Subject list component (inline)
   const SubjectList = ({ subjects }: { subjects: Subject[] }) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,12 +140,12 @@ export const AllSubjects = () => {
     <div className="w-full max-w-6xl mx-auto animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center">
-          <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg mr-4">
-            <Book className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="bg-indigo-900/50 p-3 rounded-lg mr-4">
+            <Book className="h-6 w-6 text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Your Subjects</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your academic courses</p>
+            <h1 className="text-2xl font-bold text-white">Your Subjects</h1>
+            <p className="text-slate-400 mt-1">Manage your academic courses</p>
           </div>
         </div>
         
@@ -164,13 +153,13 @@ export const AllSubjects = () => {
           <button
             onClick={fetchSubjects}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/70 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700/70 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin text-indigo-500' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
             <span>Refresh</span>
           </button>
           
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 shadow-md">
             <PlusCircle className="h-4 w-4" />
             <span>Add Subject</span>
           </button>
@@ -178,11 +167,11 @@ export const AllSubjects = () => {
       </div>
       
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 px-6 py-5 rounded-xl mb-6 flex items-start animate-fadeIn">
+        <div className="bg-red-900/20 border border-red-800/50 text-red-300 px-6 py-5 rounded-xl mb-6 flex items-start animate-fadeIn">
           <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="font-medium mb-1">Error loading subjects</h3>
-            <p className="text-red-600 dark:text-red-300/90 text-sm">{error}</p>
+            <p className="text-red-300/90 text-sm">{error}</p>
           </div>
         </div>
       )}
