@@ -50,7 +50,7 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
     };
 
     fetchSubjects();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (type && subjectCode && semester && token) {
