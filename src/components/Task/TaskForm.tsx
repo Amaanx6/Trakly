@@ -37,8 +37,8 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
       
       setIsLoading(true);
       try {
-        const email = localStorage.getItem("email")
-        const response = await axios.get(`https://trakly.onrender.com/api/get/subjects?email=${email}`);
+        const userEmail = localStorage.getItem("email");
+        const response = await axios.get(`https://trakly.onrender.com/api/get/subjects?email=${userEmail}`);
         // @ts-ignore
         setSubjects(response.data.subjects);
         setIsLoading(false);
