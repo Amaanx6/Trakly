@@ -12,7 +12,7 @@ interface FormData {
 
 const TaskForm = () => {
   const [formData, setFormData] = useState<FormData>({
-    title: 'Auto-generated Task', // Default title to satisfy backend validation
+    title: '',  // Keep title initialized
     description: '',
     deadline: '',
     status: 'pending',
@@ -42,6 +42,12 @@ const TaskForm = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validation based on the server-side validators
+    if (!formData.title || !formData.title.trim()) {
+      setError('Title is required');
+      return;
+    }
     
     if (!formData.deadline) {
       setError('Deadline is required');
@@ -52,8 +58,8 @@ const TaskForm = () => {
       // Create FormData object
       const data = new FormData();
       
-      // Add title with default value to satisfy backend validation
-      data.append('title', 'Auto-generated Task');
+      // Add all required fields first
+      data.append('title', formData.title.trim());
       data.append('deadline', formData.deadline);
       
       // Add optional fields
@@ -99,7 +105,7 @@ const TaskForm = () => {
 
       setSuccess('Task created successfully');
       setFormData({
-        title: 'Auto-generated Task', // Keep the default title
+        title: '',
         description: '',
         deadline: '',
         status: 'pending',
@@ -118,7 +124,20 @@ const TaskForm = () => {
     <div className="max-w-md mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Create Task</h2>
       <form onSubmit={handleSubmit} encType="multipart/form-data">
-        {/* Title is handled automatically in the background with a default value */}
+        {/* Add an explicit visible title field to ensure it's properly sent */}
+        <div className="mb-4">
+          <label className="block text-gray-700">Title</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+            maxLength={100}
+            placeholder="Enter task title"
+          />
+        </div>
         
         {/* Add your new field here */}
         
