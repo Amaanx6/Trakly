@@ -196,7 +196,7 @@ export const getAnswersFromPDF = async (req, res) => {
       return res.status(404).json({ message: 'PDF not found for this task' });
     }
 
-    const pdfPath = path.resolve(process.cwd(), task.pdfUrl.replace(/^\//, ''));
+    const pdfPath = path.join('/tmp', 'Uploads', path.basename(task.pdfUrl));
     console.log('Resolved PDF path:', pdfPath);
 
     try {
