@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import path from 'path';
 import fs from 'fs';
 import { scheduleReminders } from './utils/scheduler.js';
@@ -36,6 +37,7 @@ app.use(passport.initialize());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('Assignment Tracker API is running');
