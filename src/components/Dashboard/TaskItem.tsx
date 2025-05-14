@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { format, isToday, isTomorrow, isPast, formatDistanceToNow } from 'date-fns';
-import { Clock, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Task } from '../../hooks/useTasks';
+import { Clock, Trash2, CheckCircle, AlertTriangle, FileText, HelpCircle } from 'lucide-react';
+import { Task, QuestionAnswer } from '../../types';
 import Button from '../Common/Button';
 import GlassContainer from '../Common/GlassContainer';
 import { API_URL } from '../../config/constants';
-import { QuestionAnswer } from '../../types';
 
 interface TaskItemProps {
   task: Task;
@@ -89,6 +88,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const handleShowPDF = () => {
+    if (task.pdfUrl) {
+      const pdfUrl = `${API_URL}${task.pdfUrl}`;
+      window.open(pdfUrl, '_blank');
+    } else {
+      alert('No PDF uploaded for this task');
+    }
+  };
+
   const deadlineDate = new Date(task.deadline);
   const isPastDeadline = isPast(deadlineDate) && task.status === 'pending';
   const urgencyLevel = getUrgencyLevel(task.deadline);
@@ -131,15 +139,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
       )}
       
       <div className="relative z-10 p-4">
-        <div className="flex items-start justify-between gap-4">
+        <div
+          className="flex items-start justify-between gap-4 cursor-pointer"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <h3
                 className={`font-medium text-lg ${task.status === 'completed' ? 'line-through text-dark-400' : ''}`}
-                role="button"
-                onClick={() => setIsExpanded(!isExpanded)}
               >
-                {task.title}
+                {task.subject.subjectCode} - {task.type} {task.taskNumber}
+                {task.title && ` - ${task.title}`}
               </h3>
               <span
                 className={`
@@ -150,57 +160,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {task.priority}
               </span>
             </div>
-
-            {isExpanded && (
-              <div className="mt-2 mb-3 text-dark-300">
-                <p>{task.description || 'No description provided.'}</p>
-                {task.pdfUrl && (
-                  <div className="mt-2">
-                    <a
-                      href={`${API_URL}${task.pdfUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-500 underline text-sm"
-                    >
-                      View Assignment PDF
-                    </a>
-                    {onGetAnswers && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleGetAnswers}
-                          isLoading={answerLoading}
-                          className="ml-4"
-                          disabled={answerLoading}
-                        >
-                          Get Answers
-                        </Button>
-                        {answerError && <p className="text-error-500 mt-2">{answerError}</p>}
-                        {answerMessage && <p className="text-dark-300 mt-2">{answerMessage}</p>}
-                        {answers.length > 0 ? (
-                          <div className="mt-4">
-                            <h4 className="text-md font-semibold text-dark-200">Answers</h4>
-                            <div className="space-y-2 mt-2">
-                              {answers.map((qa, index) => (
-                                <div key={index} className="text-sm text-dark-300">
-                                  <p><strong>Q: {qa.question}</strong></p>
-                                  <p>A: {qa.answer}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          !answerMessage && !answerError && answers.length === 0 && (
-                            <p className="text-dark-300 mt-2">No answers loaded yet.</p>
-                          )
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className="flex items-center gap-4 text-sm text-dark-400">
               <div className="flex items-center gap-1">
@@ -222,7 +181,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleComplete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleComplete();
+                }}
                 isLoading={isCompleting}
                 aria-label="Mark as completed"
                 title="Mark as completed"
@@ -234,7 +196,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
               isLoading={isDeleting}
               aria-label="Delete task"
               title="Delete task"
@@ -243,6 +208,57 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </Button>
           </div>
         </div>
+
+        {isExpanded && (
+          <div className="mt-3 p-3 glass bg-dark-600/50 rounded-lg">
+            <div className="flex flex-col gap-2 mb-3">
+              <p className="text-dark-300 text-sm">
+                {task.description || 'No description provided.'}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShowPDF}
+                  leftIcon={<FileText className="h-4 w-4" />}
+                  disabled={!task.pdfUrl}
+                >
+                  Show PDF
+                </Button>
+                {onGetAnswers && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGetAnswers}
+                    leftIcon={<HelpCircle className="h-4 w-4" />}
+                    isLoading={answerLoading}
+                    disabled={answerLoading}
+                  >
+                    Get Answers
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {answerError && (
+              <p className="text-error-500 text-sm">{answerError}</p>
+            )}
+            {answerMessage && (
+              <p className="text-dark-300 text-sm">{answerMessage}</p>
+            )}
+            {answers.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-md font-semibold text-dark-200">Answers</h4>
+                {answers.map((qa, index) => (
+                  <div key={index} className="text-sm text-dark-300">
+                    <p><strong>Q: {qa.question}</strong></p>
+                    <p>A: {qa.answer}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </GlassContainer>
   );
