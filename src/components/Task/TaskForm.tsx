@@ -5,6 +5,13 @@ import Button from '../Common/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { ChevronDown } from 'lucide-react';
 
+// Define Subject interface
+interface Subject {
+  subjectCode: string;
+  subjectName: string;
+  _id: string;
+}
+
 const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: () => void; onAddTask: () => void }) => {
   const [type, setType] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
@@ -14,9 +21,28 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   const [pdf, setPdf] = useState<File | null>(null);
   const [semester, setSemester] = useState('1');
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const { user, token } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuth();
+
+  // Fetch subjects from API
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get('https://trakly.onrender.com/api/get/subjects');
+        setSubjects(response.data.subjects);
+        setIsLoading(false);
+      } catch (err: any) {
+        setError('Failed to fetch subjects');
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
 
   useEffect(() => {
     if (type && subjectCode && semester && token) {
@@ -117,13 +143,14 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
                 className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500"
                 aria-label="Subject"
                 required
+                disabled={isLoading}
               >
                 <option value="" disabled>
-                  Select Subject
+                  {isLoading ? "Loading subjects..." : "Select Subject"}
                 </option>
-                {user?.subjects?.map((sub) => (
-                  <option key={sub.subjectCode} value={sub.subjectCode}>
-                    {sub.subjectName}
+                {subjects.map((subject) => (
+                  <option key={subject._id} value={subject.subjectCode}>
+                    {subject.subjectName}
                   </option>
                 ))}
               </select>
