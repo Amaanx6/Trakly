@@ -118,7 +118,7 @@ const TaskForm = () => {
       console.error('TaskForm submission failed:', err);
       setError((err as Error).message);
     }
-  };
+  }
 
   return (
     <div className="max-w-md mx-auto p-4">
