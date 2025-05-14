@@ -8,6 +8,7 @@ import GlassContainer from '../Common/GlassContainer';
 import Loader from '../Common/Loader';
 import Button from '../Common/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { AllSubjects } from './AllSUbjects';
 
 interface TaskListProps {
   tasks: Task[];
@@ -256,6 +257,7 @@ const TaskList: React.FC<TaskListProps> = ({
           >
             All Subjects
           </Button> */}
+          <AllSubjects />
           {user?.subjects?.map((sub) => (
             <Button
               key={sub.subjectCode}

@@ -45,6 +45,7 @@ const SignupPage: React.FC = () => {
 
     try {
       await signup(email, password, name, college, year, branch);
+      localStorage.setItem("email", email);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);
