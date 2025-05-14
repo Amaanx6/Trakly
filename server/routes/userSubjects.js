@@ -18,7 +18,7 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-router.get('/subjects', authMiddleware, async (req, res) => {
+router.get('/subjects', async (req, res) => {
   try {
     const { email } = req.query;
     
