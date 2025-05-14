@@ -1,4 +1,3 @@
-// In src/components/Task/TaskForm.tsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Button from '../Common/Button';
@@ -30,8 +29,6 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   // Fetch subjects from API
   useEffect(() => {
     const fetchSubjects = async () => {
-
-      
       setIsLoading(true);
       try {
         const userEmail = localStorage.getItem("email");
@@ -109,151 +106,165 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="glass-card p-6 w-full max-w-md rounded-xl shadow-xl">
-        <h3 className="text-lg font-semibold text-white mb-4">Create Task</h3>
-        {error && <p className="text-red-400 mb-4 text-center">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-1">
-              Type
-            </label>
-            <div className="relative">
-              <select
-                id="type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500"
-                aria-label="Task Type"
-                required
-              >
-                <option value="" disabled>
-                  Select Type
-                </option>
-                <option value="Assignment">Assignment</option>
-                <option value="Surprise Test">Surprise Test</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 md:p-6">
+      <div className="glass-card rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-[#1e293b]/95 backdrop-blur-sm p-4 border-b border-slate-700 rounded-t-xl">
+          <h3 className="text-lg font-semibold text-white">Create Task</h3>
+        </div>
+        
+        <div className="p-4">
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-400 rounded-md">
+              <p className="text-red-400 text-sm text-center">{error}</p>
             </div>
-            {fieldErrors.type && <p className="text-red-400 text-xs mt-1">{fieldErrors.type}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="subjectCode" className="block text-sm font-medium text-slate-300 mb-1">
-              Subject
-            </label>
-            <div className="relative">
-              <select
-                id="subjectCode"
-                value={subjectCode}
-                onChange={(e) => setSubjectCode(e.target.value)}
-                className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500"
-                aria-label="Subject"
-                required
-                disabled={isLoading}
-              >
-                <option value="" disabled>
-                  {isLoading ? "Loading subjects..." : "Select Subject"}
-                </option>
-                {subjects.map((subject) => (
-                  <option key={subject._id} value={subject.subjectCode}>
-                    {subject.subjectName}
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-2">
+                Type
+              </label>
+              <div className="relative">
+                <select
+                  id="type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500 text-base"
+                  aria-label="Task Type"
+                  required
+                >
+                  <option value="" disabled>
+                    Select Type
                   </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                  <option value="Assignment">Assignment</option>
+                  <option value="Surprise Test">Surprise Test</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              </div>
+              {fieldErrors.type && <p className="text-red-400 text-xs mt-1">{fieldErrors.type}</p>}
             </div>
-            {fieldErrors.subjectCode && (
-              <p className="text-red-400 text-xs mt-1">{fieldErrors.subjectCode}</p>
-            )}
-          </div>
 
-          <div>
-            <label htmlFor="taskNumber" className="block text-sm font-medium text-slate-300 mb-1">
-              Task Number
-            </label>
-            <div className="relative">
-              <select
-                id="taskNumber"
-                value={taskNumber}
-                onChange={(e) => setTaskNumber(e.target.value)}
-                className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500"
-                aria-label="Task Number"
-                required
-              >
-                <option value="" disabled>
-                  Select Task Number
-                </option>
-                {availableNumbers.map((num) => (
-                  <option key={num} value={num}>
-                    {num}
+            <div>
+              <label htmlFor="subjectCode" className="block text-sm font-medium text-slate-300 mb-2">
+                Subject
+              </label>
+              <div className="relative">
+                <select
+                  id="subjectCode"
+                  value={subjectCode}
+                  onChange={(e) => setSubjectCode(e.target.value)}
+                  className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500 text-base"
+                  aria-label="Subject"
+                  required
+                  disabled={isLoading}
+                >
+                  <option value="" disabled>
+                    {isLoading ? "Loading subjects..." : "Select Subject"}
                   </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                  {subjects.map((subject) => (
+                    <option key={subject._id} value={subject.subjectCode}>
+                      {subject.subjectName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              </div>
+              {fieldErrors.subjectCode && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.subjectCode}</p>
+              )}
             </div>
-            {fieldErrors.taskNumber && (
-              <p className="text-red-400 text-xs mt-1">{fieldErrors.taskNumber}</p>
-            )}
-          </div>
 
-          <div>
-            <label htmlFor="deadline" className="block text-sm font-medium text-slate-300 mb-1">
-              Deadline
-            </label>
-            <input
-              type="date"
-              id="deadline"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="input-field w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              aria-label="Deadline"
-              required
-            />
-            {fieldErrors.deadline && <p className="text-red-400 text-xs mt-1">{fieldErrors.deadline}</p>}
-          </div>
+            <div>
+              <label htmlFor="taskNumber" className="block text-sm font-medium text-slate-300 mb-2">
+                Task Number
+              </label>
+              <div className="relative">
+                <select
+                  id="taskNumber"
+                  value={taskNumber}
+                  onChange={(e) => setTaskNumber(e.target.value)}
+                  className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500 text-base"
+                  aria-label="Task Number"
+                  required
+                >
+                  <option value="" disabled>
+                    Select Task Number
+                  </option>
+                  {availableNumbers.map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              </div>
+              {fieldErrors.taskNumber && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.taskNumber}</p>
+              )}
+            </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-1">
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input-field w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              rows={4}
-              aria-label="Description"
-            />
-          </div>
+            <div>
+              <label htmlFor="deadline" className="block text-sm font-medium text-slate-300 mb-2">
+                Deadline
+              </label>
+              <input
+                type="date"
+                id="deadline"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="input-field w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-base"
+                aria-label="Deadline"
+                required
+              />
+              {fieldErrors.deadline && <p className="text-red-400 text-xs mt-1">{fieldErrors.deadline}</p>}
+            </div>
 
-          <div>
-            <label htmlFor="pdf" className="block text-sm font-medium text-slate-300 mb-1">
-              PDF Upload
-            </label>
-            <input
-              type="file"
-              id="pdf"
-              accept=".pdf"
-              onChange={(e) => setPdf(e.target.files?.[0] || null)}
-              className="input-field w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 transition-all"
-              aria-label="PDF Upload"
-            />
-          </div>
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="input-field w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-base"
+                rows={3}
+                aria-label="Description"
+              />
+            </div>
 
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="hover:bg-slate-700 transition-colors"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" className="hover:bg-blue-600 transition-colors">
-              Create Task
-            </Button>
-          </div>
-        </form>
+            <div>
+              <label htmlFor="pdf" className="block text-sm font-medium text-slate-300 mb-2">
+                PDF Upload
+              </label>
+              <input
+                type="file"
+                id="pdf"
+                accept=".pdf"
+                onChange={(e) => setPdf(e.target.files?.[0] || null)}
+                className="input-field w-full p-2 rounded-md bg-[#2d3748] text-white border border-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 transition-all text-sm"
+                aria-label="PDF Upload"
+              />
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto mt-2 sm:mt-0 hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                variant="primary" 
+                className="w-full sm:w-auto hover:bg-blue-600 transition-colors"
+              >
+                Create Task
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
