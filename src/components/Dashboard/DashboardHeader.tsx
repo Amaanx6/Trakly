@@ -30,10 +30,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ upcomingTasks }) => {
   const getUserName = () => {
     if (isLoading) return null;
     if (!user) return 'Student';
+    
+    // Fix: Properly extract user name from auth user object
     const authUser = user as AuthUser;
     return authUser.name || authUser.email?.split('@')[0] || 'Student';
   };
 
+  // Get the user's display name
   const displayName = getUserName();
 
   const formatTaskDeadline = (deadline: string) => {
@@ -57,7 +60,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ upcomingTasks }) => {
 
       <div className="relative z-10">
         <h1 className="text-2xl font-bold mb-1">
-          {greeting}{displayName ? `, ${displayName}` : ''}
+          {greeting}, {displayName}
         </h1>
         <p className="text-dark-400 mb-4">
           Today is {format(today, 'EEEE, MMMM d, yyyy')}
