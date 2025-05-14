@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Button from '../Common/Button';
@@ -9,15 +9,31 @@ import Loader from '../Common/Loader';
 const CTASection: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  console.log('CTASection Auth State:', { isAuthenticated, user, isLoading, token: localStorage.getItem('token') });
+  // Log auth state for debugging
+  console.log('CTASection Auth State:', { 
+    isAuthenticated, 
+    user, 
+    isLoading, 
+    token: localStorage.getItem('token') 
+  });
+
+  // Add effect to ensure auth state is properly evaluated
+  useEffect(() => {
+    // Wait until we're no longer loading to mark auth as checked
+    if (!isLoading) {
+      setAuthChecked(true);
+    }
+  }, [isLoading, isAuthenticated]);
 
   const handleDashboardClick = () => {
     console.log('Navigating to dashboard');
     navigate('/dashboard');
   };
 
-  if (isLoading) {
+  // Show loader while checking authentication
+  if (isLoading || !authChecked) {
     return (
       <section className="py-16 px-4">
         <div className="container-lg">
@@ -31,6 +47,9 @@ const CTASection: React.FC = () => {
     );
   }
 
+  // Extract display name
+  const displayName = user?.name || (user?.email ? user.email.split('@')[0] : '');
+
   return (
     <section className="py-16 px-4">
       <div className="container-lg">
@@ -40,7 +59,7 @@ const CTASection: React.FC = () => {
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 {isAuthenticated
-                  ? `Welcome back${user?.name ? `, ${user.name}` : ''}!`
+                  ? `Welcome back${displayName ? `, ${displayName}` : ''}!`
                   : 'Ready to take control of your academic life?'}
               </h2>
               <p className="text-dark-300 text-lg mb-8">

@@ -149,6 +149,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 className={`font-medium text-lg ${task.status === 'completed' ? 'line-through text-dark-400' : ''}`}
               >
                 {task.subject.subjectName} - {task.type} {task.taskNumber}
+                {/* @ts-ignore */}
                 {task.title && ` - ${task.title}`}
               </h3>
               <span

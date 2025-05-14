@@ -8,6 +8,7 @@ import GlassContainer from '../Common/GlassContainer';
 import Loader from '../Common/Loader';
 import Button from '../Common/Button';
 import { useAuth } from '../../hooks/useAuth';
+// @ts-ignore
 import { AllSubjects } from './AllSUbjects';
 
 interface TaskListProps {
