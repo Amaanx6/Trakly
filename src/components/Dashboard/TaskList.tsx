@@ -257,7 +257,7 @@ const TaskList: React.FC<TaskListProps> = ({
           >
             All Subjects
           </Button> */}
-          <AllSubjects />
+          
           {user?.subjects?.map((sub) => (
             <Button
               key={sub.subjectCode}

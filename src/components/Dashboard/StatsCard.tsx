@@ -3,6 +3,7 @@ import { Task } from '../../hooks/useTasks';
 import { isPast } from 'date-fns';
 import { Clock, CheckSquare, AlertTriangle, Calendar } from 'lucide-react';
 import GlassContainer from '../Common/GlassContainer';
+import { AllSubjects } from './AllSUbjects';
 
 interface StatsCardProps {
   tasks: Task[];
@@ -24,7 +25,8 @@ const StatsCard: React.FC<StatsCardProps> = ({ tasks }) => {
 
   return (
     <GlassContainer className="p-6 rounded-lg">
-      <h2 className="text-xl font-semibold mb-4">Task Overview</h2>
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Task Overview</h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass p-4 rounded-lg">
@@ -90,6 +92,11 @@ const StatsCard: React.FC<StatsCardProps> = ({ tasks }) => {
           </div>
         </div>
       )}
+      </div>
+
+      <div>
+        <AllSubjects />
+      </div>
     </GlassContainer>
   );
 };
