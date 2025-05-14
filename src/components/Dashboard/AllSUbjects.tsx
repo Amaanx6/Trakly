@@ -1,24 +1,31 @@
 import axios from 'axios';
 import { useState } from 'react';
 
-// Define an interface for the Subject type
+// Define interfaces for the API response structure
 interface Subject {
-  id?: string;
-  name?: string;
-  title?: string;
-  [key: string]: any; // Allow for any additional properties
+  subjectCode: string;
+  subjectName: string;
+  _id: string;
+}
+
+interface APIResponse {
+  subjects: Subject[];
 }
 
 export const AllSubjects = () => {
-    // Properly type the state
-    const [Subjects, setSubjects] = useState<Subject[]>([]);
+    // Store the subjects array
+    const [subjects, setSubjects] = useState<Subject[]>([]);
 
     async function FetchSubjects() {
-        const userEmail = localStorage.getItem("email");
-        const response = await axios.get<Subject[]>(`https://trakly.onrender.com/api/get/subjects?email=${userEmail}`);
-        
-        // Explicitly cast the response data to Subject[]
-        setSubjects(response.data as Subject[]);
+        try {
+            const userEmail = localStorage.getItem("email");
+            const response = await axios.get<APIResponse>(`https://trakly.onrender.com/api/get/subjects?email=${userEmail}`);
+            
+            // Access the subjects array from the response
+            setSubjects(response.data.subjects);
+        } catch (error) {
+            console.error("Error fetching subjects:", error);
+        }
     }
 
     return (
@@ -26,12 +33,11 @@ export const AllSubjects = () => {
             <p>All Subjects are listed here:</p>
             
             {/* Render the subjects with proper mapping */}
-            {Array.isArray(Subjects) && Subjects.length > 0 ? (
+            {subjects.length > 0 ? (
                 <ul>
-                    {Subjects.map((subject, index) => (
-                        <li key={index}>
-                            {/* Adjust this based on your actual data structure */}
-                            {subject.name || subject.title || JSON.stringify(subject)}
+                    {subjects.map((subject) => (
+                        <li key={subject._id}>
+                            {subject.subjectName} ({subject.subjectCode})
                         </li>
                     ))}
                 </ul>
