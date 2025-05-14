@@ -1,4 +1,3 @@
-// In server/routes/taskRoutes.js
 import express from 'express';
 import { 
   getTasks, 
@@ -18,7 +17,7 @@ router.use(protect);
 
 router.route('/')
   .get(getTasks)
-  .post(upload, taskValidator, createTask);
+  .post(upload.single('pdf'), taskValidator, createTask);
 
 router.route('/:id')
   .put(updateTask)

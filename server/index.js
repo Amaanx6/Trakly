@@ -8,7 +8,6 @@ import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import userSubjects from './routes/userSubjects.js';
 import path from 'path';
-import fs from 'fs';
 import { scheduleReminders } from './utils/scheduler.js';
 import './middleware/passport.js'; // Import Passport configuration
 
@@ -16,11 +15,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-const UploadsDir = path.join(process.cwd(), 'Uploads');
-if (!fs.existsSync(UploadsDir)) {
-  fs.mkdirSync(UploadsDir, { recursive: true });
-}
 
 const corsOptions = {
   origin: ['https://trakly.vercel.app', 'http://localhost:5173'],
@@ -33,7 +27,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/Uploads', express.static(UploadsDir));
+app.use('/Uploads', express.static(path.join('/tmp', 'Uploads')));
 app.use(passport.initialize());
 
 app.use('/api/auth', authRoutes);

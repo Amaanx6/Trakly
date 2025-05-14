@@ -1,4 +1,3 @@
-// In server/controllers/taskController.js
 import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
@@ -76,7 +75,17 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: 'Invalid or unavailable task number' });
     }
 
-    const pdfUrl = req.file ? `/Uploads/${req.file.filename}` : null;
+    let pdfUrl = null;
+    if (req.file) {
+      try {
+        const uploadPath = path.join('/tmp', 'Uploads', req.file.filename);
+        await fs.access(uploadPath, fs.constants.R_OK); // Verify file exists
+        pdfUrl = `/Uploads/${req.file.filename}`;
+      } catch (err) {
+        console.error('File upload error:', err);
+        return res.status(400).json({ message: 'File upload error', error: err.message });
+      }
+    }
 
     const task = await Task.create({
       user: userId,
