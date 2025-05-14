@@ -2,20 +2,22 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { API_URL } from './../../config/constants';
 
 interface FormData {
-  title: string;
+  title: string;  // Keep title as it's required by the backend
   description: string;
   deadline: string;
   status: 'pending' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  // Add your new field here if needed
 }
 
 const TaskForm = () => {
   const [formData, setFormData] = useState<FormData>({
-    title: '',
+    title: '',  // Keep title initialized
     description: '',
     deadline: '',
     status: 'pending',
     priority: 'medium',
+    // Initialize your new field here if needed
   });
   const [pdf, setPdf] = useState<File | null>(null);
   const [error, setError] = useState<string>('');
@@ -41,29 +43,34 @@ const TaskForm = () => {
     setError('');
     setSuccess('');
 
-    // Validate required fields
+    // Always include the title field, even if it's hidden in the UI
     if (!formData.title.trim()) {
-      setError('Title is required');
-      return;
+      // If you've removed the title field from UI, set a default value
+      formData.title = "Default Task Title";
     }
+    
     if (!formData.deadline) {
       setError('Deadline is required');
       return;
     }
 
     const data = new FormData();
+    // Always append title to satisfy the backend validation
     data.append('title', formData.title.trim());
     data.append('description', formData.description.trim());
     data.append('deadline', formData.deadline);
     data.append('status', formData.status);
     data.append('priority', formData.priority);
+    // Append your new field here if needed
+    
     if (pdf) {
       data.append('pdf', pdf);
     }
 
     // Log FormData for debugging
-    const formDataEntries = Object.fromEntries(data);
-    console.log('TaskForm submitting FormData:', formDataEntries);
+    for (const pair of data.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
 
     try {
       const response = await fetch(`${API_URL}/api/tasks`, {
@@ -87,6 +94,7 @@ const TaskForm = () => {
         deadline: '',
         status: 'pending',
         priority: 'medium',
+        // Reset your new field here if needed
       });
       setPdf(null);
       (document.getElementById('pdf-input') as HTMLInputElement).value = '';
@@ -100,19 +108,15 @@ const TaskForm = () => {
     <div className="max-w-md mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Create Task</h2>
       <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <div className="mb-4">
-          <label className="block text-gray-700">Title</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-            maxLength={100}
-            placeholder="Enter task title"
-          />
-        </div>
+        {/* If you want to keep the title field but hide it, use this: */}
+        <input
+          type="hidden"
+          name="title"
+          value={formData.title || "Default Task Title"}
+        />
+        
+        {/* Add your new field here */}
+        
         <div className="mb-4">
           <label className="block text-gray-700">Description</label>
           <textarea
