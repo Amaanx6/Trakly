@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Menu, X, LogOut, Calendar, CheckSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -8,16 +8,19 @@ const Navbar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [displayName, setDisplayName] = useState('User');
+
+  // Handle user data changes with useEffect
+  useEffect(() => {
+    if (user) {
+      const name = user.name || (user.email ? user.email.split('@')[0] : 'User');
+      setDisplayName(name);
+    }
+  }, [user]); // Re-run when user object changes
 
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  // Get display name from user object
-  const getDisplayName = () => {
-    if (!user) return 'User';
-    return user.name || (user.email ? user.email.split('@')[0] : 'User');
   };
 
   return (
@@ -51,7 +54,7 @@ const Navbar: React.FC = () => {
               </Link>
               <div className="border-l border-dark-700 h-6 mx-2"></div>
               <div className="text-dark-300">
-                Hi, {getDisplayName()}
+                Hi, {displayName}
               </div>
               <Button 
                 variant="ghost" 
@@ -84,7 +87,7 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <div className="text-dark-300 mb-2">
-                  Hi, {getDisplayName()}
+                  Hi, {displayName}
                 </div>
                 <Link 
                   to="/dashboard" 
