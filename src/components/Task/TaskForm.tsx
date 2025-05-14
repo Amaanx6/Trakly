@@ -19,7 +19,7 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [pdf, setPdf] = useState<File | null>(null);
-  const [semester, setSemester] = useState('1');
+  const [semester] = useState('1');
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +37,9 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
       
       setIsLoading(true);
       try {
-        const response = await axios.get('https://trakly.onrender.com/api/get/subjects', {
-          params: { email: user.email }
-        });
+        const email = localStorage.getItem("email")
+        const response = await axios.get(`https://trakly.onrender.com/api/get/subjects?email=${email}`);
+        // @ts-ignore
         setSubjects(response.data.subjects);
         setIsLoading(false);
       } catch (err: any) {
@@ -60,7 +60,9 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
+          // @ts-ignore
           setAvailableNumbers(res.data);
+          // @ts-ignore
           setTaskNumber(res.data[0]?.toString() || '');
         })
         .catch((err) => setError(err.response?.data?.message || 'Failed to fetch task numbers'));
