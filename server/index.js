@@ -6,6 +6,7 @@ import passport from 'passport';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import userSubjects from './routes/userSubjects.js';
 import path from 'path';
 import fs from 'fs';
 import { scheduleReminders } from './utils/scheduler.js';
