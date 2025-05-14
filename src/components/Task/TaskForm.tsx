@@ -25,24 +25,32 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   // Fetch subjects from API
   useEffect(() => {
     const fetchSubjects = async () => {
+      if (!user?.email) {
+        setError('User email not available');
+        return;
+      }
+      
       setIsLoading(true);
       try {
-        const response = await axios.get('https://trakly.onrender.com/api/get/subjects');
+        const response = await axios.get('https://trakly.onrender.com/api/get/subjects', {
+          params: { email: user.email }
+        });
         setSubjects(response.data.subjects);
         setIsLoading(false);
       } catch (err: any) {
         setError('Failed to fetch subjects');
         setIsLoading(false);
+        console.error('Error fetching subjects:', err);
       }
     };
 
     fetchSubjects();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (type && subjectCode && semester && token) {
