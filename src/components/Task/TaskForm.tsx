@@ -30,10 +30,7 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   // Fetch subjects from API
   useEffect(() => {
     const fetchSubjects = async () => {
-      if (!user?.email) {
-        setError('User email not available');
-        return;
-      }
+
       
       setIsLoading(true);
       try {
