@@ -1,4 +1,3 @@
-// In server/models/Task.js
 import mongoose from 'mongoose';
 
 const taskSchema = new mongoose.Schema(
@@ -47,7 +46,7 @@ const taskSchema = new mongoose.Schema(
     semester: {
       type: String,
       required: [true, 'Semester is required'],
-      default: '1', // Adjust based on logic
+      default: '1',
     },
     status: {
       type: String,
