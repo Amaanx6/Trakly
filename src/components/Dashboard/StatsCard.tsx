@@ -25,7 +25,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ tasks }) => {
 
   return (
     <div>
-      <GlassContainer className="p-6 rounded-lg">
+      <GlassContainer className="p-6 mb-6 rounded-lg">
       <h2 className="text-xl font-semibold mb-4">Task Overview</h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
