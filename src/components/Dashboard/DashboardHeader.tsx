@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { Task } from '../../types';
@@ -13,10 +13,13 @@ interface DashboardHeaderProps {
 interface AuthUser {
   name?: string;
   email?: string;
+  displayName?: string; // Adding displayName as many auth providers use this field
+  uid?: string;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ upcomingTasks }) => {
   const { user, isLoading } = useAuth();
+  const [displayName, setDisplayName] = useState<string>('Student');
   const today = new Date();
   const upcomingTask = upcomingTasks[0] || null;
   
@@ -27,17 +30,24 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ upcomingTasks }) => {
   if (hour < 12) greeting = 'Good morning';
   else if (hour < 18) greeting = 'Good afternoon';
 
-  const getUserName = () => {
-    if (isLoading) return null;
-    if (!user) return 'Student';
-    
-    // Fix: Properly extract user name from auth user object
-    const authUser = user as AuthUser;
-    return authUser.name || authUser.email?.split('@')[0] || 'Student';
-  };
-
-  // Get the user's display name
-  const displayName = getUserName();
+  // Use effect to properly handle user data once it's loaded
+  useEffect(() => {
+    if (!isLoading && user) {
+      const authUser = user as AuthUser;
+      // Check all possible name fields in the user object
+      const userName = authUser.displayName || authUser.name || 
+                       (authUser.email ? authUser.email.split('@')[0] : null);
+      
+      if (userName) {
+        // Capitalize first letter of name for better presentation
+        const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
+        setDisplayName(formattedName);
+      }
+      
+      // Log for debugging (remove in production)
+      console.log('Auth user data:', authUser);
+    }
+  }, [user, isLoading]);
 
   const formatTaskDeadline = (deadline: string) => {
     const deadlineDate = new Date(deadline);
@@ -74,6 +84,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ upcomingTasks }) => {
                   <Clock className="h-4 w-4 mr-1" />
                   <span>Next upcoming deadline</span>
                 </div>
+                {/* @ts-ignore */}
                 <h3 className="font-semibold">{upcomingTask.title}</h3>
               </div>
               <div className={`px-3 py-1 rounded-full text-sm ${
