@@ -18,15 +18,21 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-router.post('/subjects', authMiddleware, async (req, res) => {
+router.get('/subjects', authMiddleware, async (req, res) => {
   try {
-    const { subjectCode, subjectName } = req.body;
-    if (!subjectCode || !subjectName) {
-      return res.status(400).json({ message: 'Subject code and name are required' });
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
     }
-    req.user.subjects.push({ subjectCode, subjectName });
-    await req.user.save();
-    res.json({ subjects: req.user.subjects });
+    
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ subjects: user.subjects });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
