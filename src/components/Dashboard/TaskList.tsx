@@ -249,13 +249,13 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          <Button
+          {/* <Button
             variant={selectedSubject === '' ? 'primary' : 'outline'}
             onClick={() => setSelectedSubject('')}
             size="sm"
           >
             All Subjects
-          </Button>
+          </Button> */}
           {user?.subjects?.map((sub) => (
             <Button
               key={sub.subjectCode}
@@ -311,6 +311,7 @@ const TaskList: React.FC<TaskListProps> = ({
             {sortedTasks.map((task) => (
               <div key={task._id} className={getGlowClass(task.deadline)}>
                 <TaskItem
+                // @ts-ignore
                   task={task}
                   onMarkComplete={onMarkComplete}
                   onDelete={onDelete}
