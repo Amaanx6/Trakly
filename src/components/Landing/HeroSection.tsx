@@ -1,10 +1,28 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import Button from '../Common/Button';
 import GlassContainer from '../Common/GlassContainer';
+import { useAuth } from '../../hooks/useAuth';
 
 const HeroSection: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Use effect to ensure auth state is properly evaluated
+  useEffect(() => {
+    // Wait until we're no longer loading to mark auth as checked
+    if (!isLoading) {
+      setAuthChecked(true);
+    }
+  }, [isLoading, isAuthenticated]);
+
+  // Handler for dashboard navigation
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
+  };
+
   return (
     <div className="py-16 md:py-24 px-4">
       <div className="container-xl grid md:grid-cols-2 gap-12 items-center">
@@ -16,14 +34,23 @@ const HeroSection: React.FC = () => {
             Track your assignments, manage surprise tests, and stay ahead of your academic schedule with our intuitive tracking system designed specifically for students.
           </p>
           <div className="flex flex-wrap gap-4 pt-4">
-            <Link to="/signup">
-              <Button size="lg">Get Started</Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="ghost" size="lg">
-                Log In
+            {/* Conditional rendering based on authentication status */}
+            {authChecked && isAuthenticated ? (
+              <Button size="lg" onClick={handleDashboardClick}>
+                Go to Dashboard
               </Button>
-            </Link>
+            ) : (
+              <>
+                <Link to="/signup">
+                  <Button size="lg">Get Started</Button>
+                </Link>
+                <Link to="/login">
+                  <Button variant="ghost" size="lg">
+                    Log In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
         <div className="relative">
