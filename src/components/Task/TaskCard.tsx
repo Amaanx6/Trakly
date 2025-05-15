@@ -78,3 +78,4 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 };
 
 export default TaskCard;
+

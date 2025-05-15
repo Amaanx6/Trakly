@@ -1,3 +1,4 @@
+// AuthContext.tsx
 import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -28,6 +29,7 @@ interface AuthContextType {
   loginWithGoogle: (token: string) => Promise<void>;
   logout: () => void;
   error: string | null;
+  refreshUserData: () => Promise<void>; // Added from modified code
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +47,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
+
+  const refreshUserData = async () => {
+    if (!token) return;
+    
+    try {
+      const res = await axios.get<AuthResponse>('/api/auth/me');
+      setUser(res.data.user);
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.error('Error refreshing user data:', err);
+      throw err;
+    }
+  };
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -68,10 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } else if (token) {
           try {
-            const res = await axios.get<AuthResponse>('/api/auth/me');
-            setUser(res.data.user);
-            setIsAuthenticated(true);
-            console.log('AuthContext: Token verified:', res.data);
+            await refreshUserData();
+            console.log('AuthContext: Token verified');
           } catch (err) {
             console.error('AuthContext: Token verification failed:', err);
             localStorage.removeItem('token');
@@ -184,6 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loginWithGoogle,
         logout,
         error,
+        refreshUserData, // Added to the context provider
       }}
     >
       {children}

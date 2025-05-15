@@ -1,15 +1,17 @@
-// In src/components/SubjectForm.tsx
 import { useState } from 'react';
 import axios from 'axios';
 import Button from '../Common/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 
 const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
   const [subjectCode, setSubjectCode] = useState('');
   const [subjectName, setSubjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { token } = useAuth();
+  const { showToast } = useToast();
 
   const validateFields = () => {
     const errors: { [key: string]: string } = {};
@@ -29,17 +31,27 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
       return;
     }
 
+    setIsSubmitting(true);
+    
     try {
       await axios.post(
         '/api/users/subjects',
         { subjectCode, subjectName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+      // Show success toast notification
+      showToast(`Subject "${subjectName}" added successfully!`, 'success');
+      
       setSubjectCode('');
       setSubjectName('');
       onSubjectAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add subject');
+      const errorMessage = err.response?.data?.message || 'Failed to add subject';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -88,8 +100,9 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
           type="submit"
           variant="primary"
           className="w-full hover:bg-blue-600 transition-colors"
+          disabled={isSubmitting}
         >
-          Add Subject
+          {isSubmitting ? 'Adding...' : 'Add Subject'}
         </Button>
       </form>
     </div>

@@ -7,8 +7,9 @@ import CalendarPage from './pages/CalendarPage';
 import LandingPage from './pages/LandingPage';
 import Layout from './components/Common/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import { ToastProvider } from './context/ToastContext';
 
-function App() {
+function AppRoutes() {
   const { isLoading } = useAuth();
 
   if (isLoading) {
@@ -47,6 +48,14 @@ function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppRoutes />
+    </ToastProvider>
   );
 }
 

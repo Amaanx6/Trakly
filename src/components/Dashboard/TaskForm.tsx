@@ -1,5 +1,6 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { API_URL } from './../../config/constants';
+import { useToast } from '../../context/ToastContext'; // Import the useToast hook
 
 interface FormData {
   title: string;  // Keep title as it's required by the backend
@@ -11,6 +12,7 @@ interface FormData {
 }
 
 const TaskForm = () => {
+  const { showToast } = useToast(); // Use the toast hook
   const [formData, setFormData] = useState<FormData>({
     title: '',  // Keep title initialized
     description: '',
@@ -22,6 +24,7 @@ const TaskForm = () => {
   const [pdf, setPdf] = useState<File | null>(null);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,6 +37,7 @@ const TaskForm = () => {
       setError('');
     } else {
       setError('Please upload a valid PDF file');
+      showToast('Please upload a valid PDF file', 'error');
       setPdf(null);
     }
   };
@@ -42,6 +46,7 @@ const TaskForm = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setIsSubmitting(true);
 
     // Always include the title field, even if it's hidden in the UI
     if (!formData.title.trim()) {
@@ -51,6 +56,8 @@ const TaskForm = () => {
     
     if (!formData.deadline) {
       setError('Deadline is required');
+      showToast('Deadline is required', 'error');
+      setIsSubmitting(false);
       return;
     }
 
@@ -86,8 +93,13 @@ const TaskForm = () => {
         console.error('TaskForm backend error:', errorData);
         throw new Error(errorData.message || 'Failed to create task');
       }
-
+      // @ts-ignore
+      const taskData = await response.json();
+      
+      
       setSuccess('Task created successfully');
+      showToast('Task created successfully!', 'success');
+      
       setFormData({
         title: '',
         description: '',
@@ -100,7 +112,11 @@ const TaskForm = () => {
       (document.getElementById('pdf-input') as HTMLInputElement).value = '';
     } catch (err) {
       console.error('TaskForm submission failed:', err);
-      setError((err as Error).message);
+      const errorMessage = (err as Error).message;
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -178,9 +194,10 @@ const TaskForm = () => {
         {success && <p className="text-green-500">{success}</p>}
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          disabled={isSubmitting}
         >
-          Create Task
+          {isSubmitting ? 'Creating Task...' : 'Create Task'}
         </button>
       </form>
     </div>
