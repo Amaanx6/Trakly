@@ -6,9 +6,9 @@ import jwt from 'jsonwebtoken';
 console.log('Passport module loaded');
 
 const googleConfig = {
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL,
+  clientID: process.env.VITE_GOOGLE_CLIENT_ID,
+  clientSecret: process.env.VITE_GOOGLE_CLIENT_IDGOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.VITE_GOOGLE_CALLBACK_URL,
 };
 
 console.log('Google Config:', {
@@ -43,7 +43,7 @@ if (!googleConfig.clientID || !googleConfig.clientSecret || !googleConfig.callba
               await user.save();
             }
           }
-          const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+          const token = jwt.sign({ id: user._id }, process.env.VITE_JWT_SECRET, {
             expiresIn: '1d',
           });
           done(null, { user: { id: user._id, email: user.email, name: user.name }, token });

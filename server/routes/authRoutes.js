@@ -15,7 +15,7 @@ router.post('/signup', async (req, res) => {
     }
     user = new User({ name, email, password, college, year, branch });
     await user.save();
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id }, process.env.VITE_JWT_SECRET, { expiresIn: '1d' });
     res.status(201).json({ 
       token, 
       user: { 
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id }, process.env.VITE_JWT_SECRET, { expiresIn: '1d' });
     res.json({ 
       token, 
       user: { 
@@ -62,7 +62,7 @@ router.get('/me', async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.VITE_JWT_SECRET);
     const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
@@ -93,15 +93,15 @@ router.get(
   '/google/callback',
   passport.authenticate('google', { 
     session: false,
-    failureRedirect: `${process.env.FRONTEND_URL}/login`
+    failureRedirect: `${process.env.VITE_FRONTEND_URL}/login`
   }),
   (req, res) => {
     console.log('Google callback req.user:', req.user);
     const { user, token } = req.user; // Matches passport.js done(null, { user, token })
     const action = req.query.state || 'login';
     const redirectUrl = action === 'signup' 
-      ? `${process.env.FRONTEND_URL}/dashboard?token=${token}&newUser=true`
-      : `${process.env.FRONTEND_URL}/dashboard?token=${token}`;
+      ? `${process.env.VITE_FRONTEND_URL}/dashboard?token=${token}&newUser=true`
+      : `${process.env.VITE_FRONTEND_URL}/dashboard?token=${token}`;
     res.redirect(redirectUrl);
   }
 );
