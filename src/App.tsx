@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage';
 import Layout from './components/Common/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import { ToastProvider } from './context/ToastContext';
+import Profile from './components/Profile/Profile';
 
 function AppRoutes() {
   const { isLoading } = useAuth();
@@ -42,6 +43,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <CalendarPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } 
         />

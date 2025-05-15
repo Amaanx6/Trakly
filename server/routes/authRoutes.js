@@ -1,8 +1,9 @@
-// In server/routes/authRoutes.js
 import express from 'express';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import { protect } from '../middleware/auth.js';
+import { body, validationResult } from 'express-validator';
 
 const router = express.Router();
 
@@ -80,6 +81,53 @@ router.get('/me', async (req, res) => {
     res.status(401).json({ message: 'Invalid token', error: err.message });
   }
 });
+
+router.put(
+  '/update-profile',
+  protect,
+  [
+    body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 50 }).withMessage('Name must be 50 characters or less'),
+    body('college').trim().notEmpty().withMessage('College is required').isLength({ max: 100 }).withMessage('College must be 100 characters or less'),
+    body('year').notEmpty().withMessage('Year is required').isIn(['1', '2', '3', '4', '5']).withMessage('Year must be between 1 and 5'),
+    body('branch').trim().notEmpty().withMessage('Branch is required').isLength({ max: 50 }).withMessage('Branch must be 50 characters or less'),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { name, college, year, branch } = req.body;
+      const userId = req.user.id;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      user.name = name;
+      user.college = college;
+      user.year = year;
+      user.branch = branch;
+
+      await user.save();
+
+      res.json({
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        college: user.college,
+        year: user.year,
+        branch: user.branch,
+        subjects: user.subjects,
+      });
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
 
 router.get('/google', (req, res, next) => {
   const { action } = req.query; // 'login' or 'signup'

@@ -10,19 +10,19 @@ const Footer: React.FC = () => {
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <BookOpen className="h-6 w-6 text-primary-500" />
-              <span className="font-bold text-xl">AssignTrack</span>
+              <span className="font-bold text-xl">Trakly</span>
             </Link>
             <p className="text-dark-400 mb-4">
               The smart way to manage your college assignments and stay ahead of surprise tests.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-dark-400 hover:text-primary-400 transition-colors">
+              <a href="https://github.com/Amaanx6" className="text-dark-400 hover:text-primary-400 transition-colors">
                 <Github className="h-5 w-5" />
               </a>
-              <a href="#" className="text-dark-400 hover:text-primary-400 transition-colors">
+              <a href="https://x.com/amaanx_6" className="text-dark-400 hover:text-primary-400 transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-dark-400 hover:text-primary-400 transition-colors">
+              <a href="https://www.instagram.com/amaanx_6/" className="text-dark-400 hover:text-primary-400 transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
             </div>
@@ -60,7 +60,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-dark-700 mt-12 pt-8 text-center text-dark-500 text-sm">
-          &copy; {new Date().getFullYear()} AssignTrack. All rights reserved.
+          &copy; {new Date().getFullYear()} Trakly. All rights reserved.
         </div>
       </div>
     </footer>

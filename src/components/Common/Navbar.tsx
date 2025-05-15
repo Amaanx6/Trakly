@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Menu, X, LogOut, Calendar, CheckSquare } from 'lucide-react';
+import { BookOpen, Menu, X, LogOut, Calendar, CheckSquare, UserIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from './Button';
 
@@ -8,19 +8,26 @@ const Navbar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [displayName, setDisplayName] = useState('User');
 
-  // Handle user data changes with useEffect
+  // Handle user data changes
   useEffect(() => {
     if (user) {
       const name = user.name || (user.email ? user.email.split('@')[0] : 'User');
       setDisplayName(name);
     }
-  }, [user]); // Re-run when user object changes
+  }, [user]);
 
   const handleLogout = () => {
     logout();
+    setIsOpen(false);
+    setIsProfileOpen(false);
     navigate('/');
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileOpen((prev) => !prev);
   };
 
   return (
@@ -52,18 +59,34 @@ const Navbar: React.FC = () => {
                 <Calendar className="h-4 w-4" />
                 <span>Calendar</span>
               </Link>
-              <div className="border-l border-dark-700 h-6 mx-2"></div>
-              <div className="text-dark-300">
-                Hi, {displayName}
+              <div className="relative">
+                <button
+                  onClick={toggleProfileDropdown}
+                  className="flex items-center gap-2 text-dark-300 hover:text-white transition-colors"
+                  aria-label="Profile menu"
+                >
+                  <UserIcon className="h-5 w-5" />
+                  <span>{displayName}</span>
+                </button>
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 glass-dark rounded-md shadow-lg py-1 z-50 animate-fadeIn">
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-sm text-dark-200 hover:bg-dark-600 hover:text-white"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      Edit Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-dark-200 hover:bg-dark-600 hover:text-white flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleLogout}
-                leftIcon={<LogOut className="h-4 w-4" />}
-              >
-                Logout
-              </Button>
             </>
           ) : (
             <>
@@ -83,12 +106,10 @@ const Navbar: React.FC = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 glass-dark mt-1 p-4 flex flex-col gap-4 md:hidden fadeIn">
+          <div className="absolute top-full left-0 right-0 glass-dark mt-1 p-4 flex flex-col gap-4 md:hidden animate-fadeIn">
             {isAuthenticated ? (
               <>
-                <div className="text-dark-300 mb-2">
-                  Hi, {displayName}
-                </div>
+                <div className="text-dark-200 font-medium">Hi, {displayName}</div>
                 <Link 
                   to="/dashboard" 
                   className="text-dark-200 hover:text-white transition-colors flex items-center gap-2 py-2"
@@ -105,7 +126,14 @@ const Navbar: React.FC = () => {
                   <Calendar className="h-5 w-5" />
                   <span>Calendar</span>
                 </Link>
-                <div className="border-t border-dark-700 my-2"></div>
+                <Link 
+                  to="/profile" 
+                  className="text-dark-200 hover:text-white transition-colors flex items-center gap-2 py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <UserIcon className="h-5 w-5" />
+                  <span>Edit Profile</span>
+                </Link>
                 <Button 
                   variant="ghost" 
                   fullWidth 

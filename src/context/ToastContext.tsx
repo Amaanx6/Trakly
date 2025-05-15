@@ -25,33 +25,38 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   const [toasts, setToasts] = useState<(ToastProps & { id: string })[]>([]);
 
   const showToast = (message: string, type: ToastType, duration = 3000) => {
+    if (!message || !['success', 'error', 'info'].includes(type)) {
+      console.warn('Invalid toast:', { message, type, duration });
+      return;
+    }
+
     const id = Math.random().toString(36).substring(2, 9);
-    
-    // Log for debugging
-    console.log("Showing toast:", { id, message, type });
-    
-    setToasts((prevToasts) => [
-      ...prevToasts,
-      {
-        id,
-        message,
-        type,
-        duration,
-        onClose: (toastId) => {
-          console.log("Closing toast:", toastId);
-          setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== toastId));
-        },
+    const toast = {
+      id,
+      message,
+      type,
+      duration,
+      onClose: (toastId: string) => {
+        console.log('Closing toast:', toastId);
+        setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== toastId));
       },
-    ]);
+    };
+
+    console.log('Showing toast:', toast);
+    setToasts((prevToasts) => [...prevToasts, toast]);
   };
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 space-y-4 flex flex-col items-end">
-        {toasts.map((toast) => (
-          <Toast key={toast.id} {...toast} />
-        ))}
+      <div className="fixed bottom-4 right-4 z-50 space-y-4 flex flex-col items-end">
+        {toasts.map((toast, index) => {
+          if (!toast?.id || !toast?.message) {
+            console.warn('Skipping invalid toast at index:', index, toast);
+            return null;
+          }
+          return <Toast key={toast.id} {...toast} />;
+        })}
       </div>
     </ToastContext.Provider>
   );
