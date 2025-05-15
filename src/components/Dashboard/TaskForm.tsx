@@ -3,7 +3,6 @@ import axios from 'axios';
 import Button from '../Common/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { ChevronDown } from 'lucide-react';
-import { useToast } from '../../context/ToastContext'; // Import the useToast hook
 
 // Define Subject interface
 interface Subject {
@@ -25,43 +24,40 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useAuth();
-  const { showToast } = useToast(); // Add the toast hook
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { token, user } = useAuth();
 
-  // Fetch subjects from API
+  // Use subjects from the authenticated user instead of making a separate API call
   useEffect(() => {
-    const fetchSubjects = async () => {
-      setIsLoading(true);
-      try {
-        const userEmail = localStorage.getItem("email");
-        const response = await axios.get(`https://trakly.onrender.com/api/get/subjects?email=${userEmail}`);
-        // @ts-ignore
-        setSubjects(response.data.subjects);
-        setIsLoading(false);
-      } catch (err: any) {
-        setError('Failed to fetch subjects');
-        setIsLoading(false);
-        console.error('Error fetching subjects:', err);
-      }
-    };
-
-    fetchSubjects();
-  }, []);
+    if (user?.subjects) {
+      // Ensure each subject has an _id property
+      setSubjects(
+        user.subjects.map((subject: any, idx: number) => ({
+          ...subject,
+          _id: subject._id ?? subject.subjectCode ?? String(idx),
+        }))
+      );
+    }
+  }, [user]);
 
   useEffect(() => {
     if (type && subjectCode && semester && token) {
+      setIsLoading(true);
       axios
         .get('/api/tasks/available-task-numbers', {
           params: { type, subjectCode, semester },
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
-          // @ts-ignore
-          setAvailableNumbers(res.data);
-          // @ts-ignore
-          setTaskNumber(res.data[0]?.toString() || '');
+          const numbers = res.data as number[];
+          setAvailableNumbers(numbers);
+          setTaskNumber(numbers[0]?.toString() || '');
+          setIsLoading(false);
         })
-        .catch((err) => setError(err.response?.data?.message || 'Failed to fetch task numbers'));
+        .catch((err) => {
+          setError(err.response?.data?.message || 'Failed to fetch task numbers');
+          setIsLoading(false);
+        });
     }
   }, [type, subjectCode, semester, token]);
 
@@ -94,22 +90,43 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
     formData.append('semester', semester);
     if (pdf) formData.append('pdf', pdf);
 
+    setIsSubmitting(true);
     try {
       await axios.post('/api/tasks', formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      // Show success toast
-      showToast('Task created successfully!', 'success');
+      // Reset form fields
+      setType('');
+      setSubjectCode('');
+      setTaskNumber('');
+      setDeadline('');
+      setDescription('');
+      setPdf(null);
       
+      // Notify parent component about successful task creation
       onAddTask();
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create task');
-      // Show error toast
-      showToast(err.response?.data?.message || 'Failed to create task', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Reset form when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setType('');
+      setSubjectCode('');
+      setTaskNumber('');
+      setDeadline('');
+      setDescription('');
+      setPdf(null);
+      setError(null);
+      setFieldErrors({});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -169,8 +186,8 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
                   <option value="" disabled>
                     {isLoading ? "Loading subjects..." : "Select Subject"}
                   </option>
-                  {subjects.map((subject) => (
-                    <option key={subject._id} value={subject.subjectCode}>
+                  {subjects?.map((subject) => (
+                    <option key={subject._id || subject.subjectCode} value={subject.subjectCode}>
                       {subject.subjectName}
                     </option>
                   ))}
@@ -194,9 +211,10 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
                   className="input-field appearance-none w-full p-3 rounded-md bg-[#2d3748] text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer hover:border-blue-500 text-base"
                   aria-label="Task Number"
                   required
+                  disabled={isLoading || !subjectCode || !type}
                 >
                   <option value="" disabled>
-                    Select Task Number
+                    {isLoading ? "Loading numbers..." : "Select Task Number"}
                   </option>
                   {availableNumbers.map((num) => (
                     <option key={num} value={num}>
@@ -260,6 +278,7 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
                 variant="outline"
                 onClick={onClose}
                 className="w-full sm:w-auto mt-2 sm:mt-0 hover:bg-slate-700 transition-colors"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
@@ -267,8 +286,9 @@ const TaskForm = ({ isOpen, onClose, onAddTask }: { isOpen: boolean; onClose: ()
                 type="submit" 
                 variant="primary" 
                 className="w-full sm:w-auto hover:bg-blue-600 transition-colors"
+                isLoading={isSubmitting}
               >
-                Create Task
+                {isSubmitting ? "Creating..." : "Create Task"}
               </Button>
             </div>
           </form>

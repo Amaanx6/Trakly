@@ -43,9 +43,14 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
       // Show success toast notification
       showToast(`Subject "${subjectName}" added successfully!`, 'success');
       
+      // Reset form fields
       setSubjectCode('');
       setSubjectName('');
-      onSubjectAdded();
+      
+      // Notify parent component about successful subject addition
+      if (onSubjectAdded) {
+        await onSubjectAdded();
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to add subject';
       setError(errorMessage);
@@ -73,6 +78,7 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
             placeholder="e.g., CS301"
             aria-label="Subject Code"
             required
+            disabled={isSubmitting}
           />
           {fieldErrors.subjectCode && (
             <p className="text-red-400 text-xs mt-1">{fieldErrors.subjectCode}</p>
@@ -91,6 +97,7 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
             placeholder="e.g., Operating Systems"
             aria-label="Subject Name"
             required
+            disabled={isSubmitting}
           />
           {fieldErrors.subjectName && (
             <p className="text-red-400 text-xs mt-1">{fieldErrors.subjectName}</p>
@@ -101,6 +108,7 @@ const SubjectForm = ({ onSubjectAdded }: { onSubjectAdded: () => void }) => {
           variant="primary"
           className="w-full hover:bg-blue-600 transition-colors"
           disabled={isSubmitting}
+          isLoading={isSubmitting}
         >
           {isSubmitting ? 'Adding...' : 'Add Subject'}
         </Button>

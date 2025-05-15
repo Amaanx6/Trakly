@@ -1,4 +1,3 @@
-// In src/pages/DashboardPage.tsx
 import React, { useState } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { useTasks } from '../hooks/useTasks';
@@ -8,6 +7,7 @@ import TaskList from '../components/Dashboard/TaskList';
 import TaskForm from '../components/Task/TaskForm';
 import SubjectForm from '../components/Dashboard/SubjectForm';
 import Button from '../components/Common/Button';
+import { useAuth } from '../hooks/useAuth';
 
 const DashboardPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -16,18 +16,26 @@ const DashboardPage: React.FC = () => {
     loading, 
     error,
     fetchTasks, 
+    // @ts-ignore
     addTask, 
     markTaskComplete,
     deleteTask,
     upcomingTasks
   } = useTasks();
+  
+  const { refreshUserData } = useAuth();
 
-  const handleAddTask = async (taskData: any) => {
-    if (!taskData.priority) {
-      taskData.priority = "medium";
-    }
-    await addTask(taskData);
+  // Handler for when a task is added
+  const handleTaskAdded = async () => {
+    await fetchTasks();
     setIsAddModalOpen(false);
+  };
+
+  // Handler for when a subject is added
+  const handleSubjectAdded = async () => {
+    // Refresh user data to get updated subjects list
+    await refreshUserData();
+    await fetchTasks();
   };
 
   const handleMarkComplete = async (id: string) => {
@@ -40,15 +48,11 @@ const DashboardPage: React.FC = () => {
 
   const handleRefresh = async () => {
     await fetchTasks();
-  };
-
-  const handleSubjectAdded = () => {
-    fetchTasks(); // Refresh to update subjects
+    await refreshUserData();
   };
 
   return (
     <div className="space-y-6">
-      {/* @ts-ignore */}
       <DashboardHeader upcomingTasks={upcomingTasks} />
       
       {error && (
@@ -84,7 +88,6 @@ const DashboardPage: React.FC = () => {
       <StatsCard tasks={tasks} />
       
       <TaskList 
-      // @ts-ignore
         tasks={tasks} 
         loading={loading} 
         error={error ?? undefined}
@@ -96,8 +99,7 @@ const DashboardPage: React.FC = () => {
       <TaskForm 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        // @ts-ignore
-        onAddTask={handleAddTask}
+        onAddTask={handleTaskAdded}
       />
     </div>
   );

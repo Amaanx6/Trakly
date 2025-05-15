@@ -1,124 +1,129 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useTasks.ts
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config/constants';
+import { Task } from '../types';
 import { useAuth } from './useAuth';
-
-export interface Task {
-  _id: string;
-  title: string;
-  description?: string;
-  deadline: string;
-  reminderTime?: string;
-  status: 'pending' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  pdfUrl?: string;
-  type?: 'assignment' | 'surprise test';
-}
-
-export interface TaskInput {
-  title: string;
-  description?: string;
-  deadline: string;
-  priority?: 'low' | 'medium' | 'high';
-  pdf?: File;
-  reminder?: '1hour' | '1day' | '';
-  type?: 'assignment' | 'surprise test';
-}
+import { useToast } from '../context/ToastContext';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  const { showToast } = useToast();
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      const res = await axios.get<Task[]>('/api/tasks', {
+      const response = await axios.get(`${API_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setTasks(res.data);
-      const upcoming = res.data.filter(task => {
-        const deadline = new Date(task.deadline);
-        const now = new Date();
-        return deadline > now && task.status === 'pending';
-      });
+      
+      const allTasks: Task[] = Array.isArray(response.data) ? response.data : [];
+      setTasks(allTasks);
+      
+      // Set upcoming tasks (due in the next 7 days)
+      const now = new Date();
+      const next7Days = new Date(now);
+      next7Days.setDate(now.getDate() + 7);
+      
+      const upcoming = allTasks.filter(
+        (task: Task) => 
+          task.status !== 'completed' && 
+          new Date(task.deadline) >= now && 
+          new Date(task.deadline) <= next7Days
+      ).sort((a: Task, b: Task) => 
+        new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+      );
+      
       setUpcomingTasks(upcoming);
-      setError(null);
+      return allTasks;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch tasks');
+      const errorMessage = err.response?.data?.message || 'Failed to fetch tasks';
+      setError(errorMessage);
+      console.error('Error fetching tasks:', err);
+      return [];
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const addTask = async (taskData: TaskInput) => {
-    setLoading(true);
+  const addTask = useCallback(async (taskData: Partial<Task>) => {
+    setError(null);
     try {
-      const formData = new FormData();
-      formData.append('title', taskData.title);
-      if (taskData.description) formData.append('description', taskData.description);
-      formData.append('deadline', taskData.deadline);
-      if (taskData.priority) formData.append('priority', taskData.priority);
-      if (taskData.pdf) formData.append('pdf', taskData.pdf);
-      if (taskData.reminder) formData.append('reminder', taskData.reminder);
-      if (taskData.type) formData.append('type', taskData.type);
-
-      const res = await axios.post<Task>('/api/tasks', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setTasks(prev => [...prev, res.data]);
-      if (new Date(res.data.deadline) > new Date() && res.data.status === 'pending') {
-        setUpcomingTasks(prev => [...prev, res.data]);
-      }
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add task');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markTaskComplete = async (id: string) => {
-    setLoading(true);
-    try {
-      const res = await axios.put<Task>(`/api/tasks/${id}`, { status: 'completed' }, {
+      const response = await axios.post(`${API_URL}/api/tasks`, taskData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setTasks(prev => prev.map(task => (task._id === id ? res.data : task)));
+      
+      // Fetch all tasks again to ensure everything is up to date
+      await fetchTasks();
+      
+      showToast('Task added successfully!', 'success');
+      return response.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to add task';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      console.error('Error adding task:', err);
+      throw err;
+    }
+  }, [token, fetchTasks, showToast]);
+
+  const markTaskComplete = useCallback(async (id: string) => {
+    setError(null);
+    try {
+      await axios.patch(
+        `${API_URL}/api/tasks/${id}/complete`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Update local state without refetching
+      setTasks(prev => prev.map(task => 
+        task._id === id ? { ...task, status: 'completed' } : task
+      ));
+      
       setUpcomingTasks(prev => prev.filter(task => task._id !== id));
-      setError(null);
+      
+      showToast('Task marked as complete!', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to mark task as complete');
-    } finally {
-      setLoading(false);
+      const errorMessage = err.response?.data?.message || 'Failed to update task';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      console.error('Error marking task complete:', err);
     }
-  };
+  }, [token, showToast]);
 
-  const deleteTask = async (id: string) => {
-    setLoading(true);
+  const deleteTask = useCallback(async (id: string) => {
+    setError(null);
     try {
-      await axios.delete(`/api/tasks/${id}`, {
+      await axios.delete(`${API_URL}/api/tasks/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      // Update local state without refetching
       setTasks(prev => prev.filter(task => task._id !== id));
       setUpcomingTasks(prev => prev.filter(task => task._id !== id));
-      setError(null);
+      
+      showToast('Task deleted successfully!', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete task');
-    } finally {
-      setLoading(false);
+      const errorMessage = err.response?.data?.message || 'Failed to delete task';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      console.error('Error deleting task:', err);
     }
-  };
+  }, [token, showToast]);
 
+  // Load tasks on initial render
   useEffect(() => {
     if (token) {
       fetchTasks();
     }
-  }, [token]);
+  }, [token, fetchTasks]);
 
   return {
     tasks,
