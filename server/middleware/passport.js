@@ -1,34 +1,43 @@
 import passport from 'passport';
-import GoogleStrategy from 'passport-google-oauth20';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 console.log('Passport module loaded');
 
-const googleConfig = {
-  clientID: process.env.VITE_GOOGLE_CLIENT_ID,
-  clientSecret: process.env.VITE_GOOGLE_CLIENT_IDGOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.VITE_GOOGLE_CALLBACK_URL,
-};
+// Check if required Google OAuth environment variables are set
+const hasRequiredGoogleConfig = 
+  process.env.VITE_GOOGLE_CLIENT_ID && 
+  process.env.VITE_GOOGLE_CLIENT_SECRET && 
+  process.env.VITE_GOOGLE_CALLBACK_URL;
 
 console.log('Google Config:', {
-  clientID: googleConfig.clientID ? '[set]' : 'missing',
-  clientSecret: googleConfig.clientSecret ? '[set]' : 'missing',
-  callbackURL: googleConfig.callbackURL || 'missing',
+  clientID: process.env.VITE_GOOGLE_CLIENT_ID ? '[set]' : 'missing',
+  clientSecret: process.env.VITE_GOOGLE_CLIENT_SECRET ? '[set]' : 'missing',
+  callbackURL: process.env.VITE_GOOGLE_CALLBACK_URL || 'missing',
 });
 
-if (!googleConfig.clientID || !googleConfig.clientSecret || !googleConfig.callbackURL) {
-  console.warn('Google OAuth configuration incomplete. Google login will not work until .env variables are set.');
-} else {
+if (hasRequiredGoogleConfig) {
+  // Register the real Google strategy if config is available
+  const googleConfig = {
+    clientID: process.env.VITE_GOOGLE_CLIENT_ID,
+    clientSecret: process.env.VITE_GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.VITE_GOOGLE_CALLBACK_URL,
+  };
+  
   passport.use(
+    'google',
     new GoogleStrategy(
       googleConfig,
       async (accessToken, refreshToken, profile, done) => {
         try {
           console.log('Google Strategy executed:', { profileId: profile.id, email: profile.emails[0].value });
+          
           let user = await User.findOne({ googleId: profile.id });
+          
           if (!user) {
             user = await User.findOne({ email: profile.emails[0].value });
+            
             if (user) {
               // Existing user: link Google account
               user.googleId = profile.id;
@@ -43,9 +52,11 @@ if (!googleConfig.clientID || !googleConfig.clientSecret || !googleConfig.callba
               await user.save();
             }
           }
+          
           const token = jwt.sign({ id: user._id }, process.env.VITE_JWT_SECRET, {
             expiresIn: '1d',
           });
+          
           done(null, { user: { id: user._id, email: user.email, name: user.name }, token });
         } catch (err) {
           console.error('Google Strategy error:', err);
@@ -54,7 +65,18 @@ if (!googleConfig.clientID || !googleConfig.clientSecret || !googleConfig.callba
       }
     )
   );
+  console.log('Google Strategy setup complete');
+} else {
+  // Register a dummy strategy to avoid "Unknown strategy" errors
+  passport.use('google', new passport.Strategy({}, (req, options, done) => {
+    return done(new Error('Google OAuth is not configured. Please set the required environment variables.'));
+  }));
+  console.warn('Google OAuth configuration incomplete. Google login will not work until environment variables are set.');
 }
+
+// These are still needed for Passport initialization
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
