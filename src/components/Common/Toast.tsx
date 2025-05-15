@@ -46,7 +46,7 @@ const Toast = ({ id, message, type, duration = 3000, onClose }: ToastProps) => {
 
   return (
     <div
-      className={`fixed top-4 right-4 flex items-center p-4 mb-4 rounded-lg shadow-lg transition-all duration-300 transform ${
+      className={`flex items-center p-4 rounded-lg shadow-lg transition-all duration-300 transform ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       } ${bgColor} text-white`}
       role="alert"

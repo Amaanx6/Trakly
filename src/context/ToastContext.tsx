@@ -26,6 +26,10 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
 
   const showToast = (message: string, type: ToastType, duration = 3000) => {
     const id = Math.random().toString(36).substring(2, 9);
+    
+    // Log for debugging
+    console.log("Showing toast:", { id, message, type });
+    
     setToasts((prevToasts) => [
       ...prevToasts,
       {
@@ -33,8 +37,9 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
         message,
         type,
         duration,
-        onClose: (id) => {
-          setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+        onClose: (toastId) => {
+          console.log("Closing toast:", toastId);
+          setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== toastId));
         },
       },
     ]);
@@ -43,7 +48,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="toast-container fixed top-4 right-4 z-50 space-y-4">
+      <div className="fixed top-4 right-4 z-50 space-y-4 flex flex-col items-end">
         {toasts.map((toast) => (
           <Toast key={toast.id} {...toast} />
         ))}
@@ -51,3 +56,5 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     </ToastContext.Provider>
   );
 };
+
+export default ToastContext;
