@@ -38,23 +38,6 @@
 
 ---
 
-## 📁 Folder Structure (Client Components)
-
-```
-
-client/
-└── src/
-└── components/
-├── Landing/
-├── Auth/
-├── Dashboard/
-├── Task/
-├── Common/
-└── Calendar/   // (Optional)
-
-````
-
----
 
 ## 🛠️ Setup Instructions
 
@@ -77,7 +60,7 @@ npm install
 #### For the Frontend:
 
 ```bash
-cd client
+cd src
 npm install
 ```
 
@@ -96,19 +79,12 @@ JWT_SECRET=your_secret_key
 ```bash
 # Start backend
 cd server
-npm run dev
+node/index.js
 
 # In another terminal, start frontend
-cd client
+cd src
 npm run dev
 ```
-
----
-
-
-Absolutely! Here's the updated **📌 Future Improvements** section with your new features, ready to be copied into your `README.md`:
-
----
 
 ## 📌 Future Improvements
 
