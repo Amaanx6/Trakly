@@ -56,3 +56,4 @@ mongoose.connect(VITE_MONGO_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
+  
