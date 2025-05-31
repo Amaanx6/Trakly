@@ -11,6 +11,8 @@ import path from 'path';
 import { scheduleReminders } from './utils/scheduler.js';
 import './middleware/passport.js'; // Import Passport configuration
 
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+
 dotenv.config();
 
 const app = express();
@@ -43,8 +45,8 @@ app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ message: 'Server error', error: err.message });
 });
-
-mongoose.connect(process.env.VITE_MONGO_URI)
+const VITE_MONGO_URI = String(process.env.VITE_MONGO_URI);
+mongoose.connect(VITE_MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
     scheduleReminders();
